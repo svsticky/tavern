@@ -126,6 +126,14 @@ export default function NavBarLayout() {
       ...(isBoard
         ? [
             {
+              label: `${t("statistics")}`,
+              href: "/admin/statistics",
+            },
+          ]
+        : []),
+      ...(isBoard
+        ? [
+            {
               label: `${t("koala_settings")}`,
               href: "/admin/settings",
             },

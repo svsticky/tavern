@@ -16,10 +16,10 @@ public enum StatisticType
     /// <summary>The number of new members per committee year: members that ever followed a study, or are a gratie member, honorary member or "Lid van Verdienste", counted in the year they registered, or in the year their first study starts if that is later.</summary>
     NewMembersPerYear,
 
-    /// <summary>The number of new bachelor members per committee year, where a member counts as new in max(registration year, year of their first bachelor enrollment).</summary>
+    /// <summary>The part of the new members per committee year (see <see cref="NewMembersPerYear"/>) that followed a bachelor when they became a member.</summary>
     NewBachelorMembersPerYear,
 
-    /// <summary>The number of new master members per committee year, where a member counts as new in max(registration year, year of their first master enrollment).</summary>
+    /// <summary>The part of the new members per committee year (see <see cref="NewMembersPerYear"/>) that followed a master when they became a member. Members who were already a member and later start a master are not new master members.</summary>
     NewMasterMembersPerYear,
 
     /// <summary>The number of unique members per committee year that are part of at least one group, disputes excluded.</summary>

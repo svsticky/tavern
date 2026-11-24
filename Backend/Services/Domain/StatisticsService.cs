@@ -165,7 +165,7 @@ public class StatisticsService(
     /// </summary>
     private static async Task<List<YearCountDTO>> GetTotalMembersPerYear(DataCache data, uint currentYear, DateTimeOffset now)
     {
-        var newMemberYears = (await GetNewMemberYears(data, null)).Values;
+        var newMemberYears = (await GetNewMemberYears(data)).Values;
         var firstYear = newMemberYears.Count > 0 ? Math.Min(newMemberYears.Min(), currentYear) : currentYear;
 
         var result = new List<YearCountDTO>();
@@ -228,21 +228,18 @@ public class StatisticsService(
     /// The committee year in which each member counts as new: the year they registered, unless their first study
     /// starts later, then the year that study starts (max of both). Only members that ever followed a study, or are a
     /// gratie member, honorary member or "Lid van Verdienste", count as new members at all ("begunstigers" are not
-    /// members). The same year rule applies to all of them. When filtering on a study type,
-    /// only enrollments of that type are considered and members without such an enrollment are left out.
+    /// members). The same year rule applies to all of them.
     /// </summary>
-    private static async Task<Dictionary<Guid, uint>> GetNewMemberYears(DataCache data, StudyType? studyType)
-        => (await GetNewMemberMoments(data, studyType)).ToDictionary(kv => kv.Key, kv => CommitteeYear(kv.Value));
+    private static async Task<Dictionary<Guid, uint>> GetNewMemberYears(DataCache data)
+        => (await GetNewMemberMoments(data)).ToDictionary(kv => kv.Key, kv => CommitteeYear(kv.Value));
 
     /// <summary>
     /// The moment each member counts as new (see <see cref="GetNewMemberYears"/>): their registration, or the start of
     /// their first study when that is later.
     /// </summary>
-    private static async Task<Dictionary<Guid, DateTimeOffset>> GetNewMemberMoments(DataCache data, StudyType? studyType)
+    private static async Task<Dictionary<Guid, DateTimeOffset>> GetNewMemberMoments(DataCache data)
     {
-        var studies = await data.Studies();
         var firstEnrollmentByMember = (await data.StudyEnrollments())
-            .Where(se => studyType == null || (studies.TryGetValue(se.StudyId, out var s) && s.Type == studyType))
             .GroupBy(se => se.MemberId)
             .ToDictionary(g => g.Key, g => g.Min(se => se.EnrollmentDate));
 
@@ -250,7 +247,7 @@ public class StatisticsService(
         foreach (var member in await data.Members())
         {
             var hasEnrollment = firstEnrollmentByMember.TryGetValue(member.Id, out var firstEnrollment);
-            if (!hasEnrollment && (studyType != null || !(member.Gratie || member.EreLid || member.LidVanVerdienste)))
+            if (!hasEnrollment && !(member.Gratie || member.EreLid || member.LidVanVerdienste))
                 continue;
 
             moments[member.Id] = hasEnrollment && firstEnrollment > member.RegisteredOn ? firstEnrollment : member.RegisteredOn;
@@ -276,7 +273,7 @@ public class StatisticsService(
             ? (await data.GroupMemberships()).Select(gm => (gm.MembershipYear, gm.MemberId)).ToHashSet()
             : null;
 
-        return (await GetNewMemberMoments(data, null))
+        return (await GetNewMemberMoments(data))
             .Where(kv => activeInYear == null || activeInYear.Contains((CommitteeYear(kv.Value), kv.Key)))
             .GroupBy(kv => CommitteeYear(kv.Value))
             .OrderBy(g => g.Key)
@@ -285,17 +282,25 @@ public class StatisticsService(
                 Year = yearGroup.Key,
                 Studies = ToStudyCounts(studies, yearGroup.SelectMany(kv =>
                 {
-                    var (memberId, moment) = (kv.Key, kv.Value);
-                    var startedBefore = enrollmentsByMember[memberId].Where(se => se.EnrollmentDate <= moment).ToList();
-                    var running = startedBefore.Where(se => se.CompletionDate == null || se.CompletionDate > moment).ToList();
-                    var followed = running.Count > 0
-                        ? running
-                        : startedBefore.Where(se => se.EnrollmentDate == startedBefore.Max(x => x.EnrollmentDate)).ToList();
-                    var ids = followed.Select(se => (uint?)se.StudyId).Distinct().ToList();
+                    var ids = StudiesFollowedAt(enrollmentsByMember[kv.Key], kv.Value).Select(id => (uint?)id).ToList();
                     return ids.Count > 0 ? ids : [null];
                 })),
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// The studies a member followed at a moment: the studies running then, or else the study they started most
+    /// recently before it. Empty when they had not started any study yet.
+    /// </summary>
+    private static List<uint> StudiesFollowedAt(IEnumerable<StudyEnrollmentRow> enrollments, DateTimeOffset moment)
+    {
+        var startedBefore = enrollments.Where(se => se.EnrollmentDate <= moment).ToList();
+        var running = startedBefore.Where(se => se.CompletionDate == null || se.CompletionDate > moment).ToList();
+        var followed = running.Count > 0
+            ? running
+            : startedBefore.Where(se => se.EnrollmentDate == startedBefore.Max(x => x.EnrollmentDate)).ToList();
+        return followed.Select(se => se.StudyId).Distinct().ToList();
     }
 
     /// <summary>Groups study ids (null = no study) into per-study counts, largest first.</summary>
@@ -317,8 +322,24 @@ public class StatisticsService(
             .ThenBy(s => s.StudyTitle)
             .ToList();
 
+    /// <summary>
+    /// The new members per committee year (see <see cref="GetNewMemberYears"/>). With a study type, only the part of
+    /// them that became a member while following a study of that type (see <see cref="StudiesFollowedAt"/>): a member
+    /// who later starts a master is not a new master member, because they were not new anymore.
+    /// </summary>
     private static async Task<List<YearCountDTO>> GetNewMembersPerYear(DataCache data, StudyType? studyType)
-        => ToYearCounts((await GetNewMemberYears(data, studyType)).Values);
+    {
+        var moments = await GetNewMemberMoments(data);
+        if (studyType == null)
+            return ToYearCounts(moments.Values.Select(CommitteeYear));
+
+        var studies = await data.Studies();
+        var enrollmentsByMember = (await data.StudyEnrollments()).ToLookup(se => se.MemberId);
+        return ToYearCounts(moments
+            .Where(kv => StudiesFollowedAt(enrollmentsByMember[kv.Key], kv.Value)
+                .Any(id => studies.TryGetValue(id, out var study) && study.Type == studyType))
+            .Select(kv => CommitteeYear(kv.Value)));
+    }
 
     private static async Task<List<YearCountDTO>> GetActiveMembersPerYear(DataCache data)
         => ToYearCounts((await data.GroupMemberships()).Select(gm => gm.MembershipYear));
@@ -392,7 +413,7 @@ public class StatisticsService(
     /// </summary>
     private static async Task<List<YearCountDTO>> GetFirstYearsAtActivitiesPerYear(DataCache data)
     {
-        var newMemberYears = await GetNewMemberYears(data, null);
+        var newMemberYears = await GetNewMemberYears(data);
 
         var years = (await data.Attendances())
             .Select(a => (a.MemberId, Year: CommitteeYear(a.ActivityStart)))

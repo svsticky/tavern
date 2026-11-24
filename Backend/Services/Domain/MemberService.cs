@@ -194,14 +194,18 @@ namespace Backend.Services.Domain
                 member.Suspended = false;
                 member.IsDeleted = true;
 
-                // Remove study enrollments that are still in progress
+                // Close study enrollments that are still in progress at the moment of deletion
+                var now = DateTimeOffset.UtcNow;
                 var activeStudyEnrollments = await db.StudyEnrollments
                     .Where(se => se.MemberId == id && se.Status == StudyStatus.Enrolled)
                     .ToListAsync(cancellationToken);
-                db.StudyEnrollments.RemoveRange(activeStudyEnrollments);
+                foreach (var studyEnrollment in activeStudyEnrollments)
+                {
+                    studyEnrollment.Status = StudyStatus.DroppedOut;
+                    studyEnrollment.CompletionDate = now;
+                }
 
                 // Check if not enrolled for any future activities
-                var now = DateTimeOffset.UtcNow;
                 var futureEnrollments = (await db.Enrollments
                         .Where(e => e.MemberId == id)
                         .Include(e => e.Activity)

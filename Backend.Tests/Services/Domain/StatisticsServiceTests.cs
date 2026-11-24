@@ -247,17 +247,20 @@ public class StatisticsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task NewBachelorAndMasterMembersPerYear_UseFirstEnrollmentOfThatType()
+    public async Task NewBachelorAndMasterMembersPerYear_UseTheStudyFollowedWhenBecomingAMember()
     {
-        var a = AddMember(D(2021, 9, 1));
-        AddStudyEnrollment(a, _cs, D(2021, 9, 1), StudyStatus.Completed, D(2024, 7, 1));
-        AddStudyEnrollment(a, _csMaster, D(2024, 9, 1));
-        var b = AddMember(D(2024, 9, 1));
-        AddStudyEnrollment(b, _csMaster, D(2024, 9, 1));
-        AddMember(D(2024, 9, 1), gratie: true);
+        var bachelorThenMaster = AddMember(D(2021, 9, 1));               // new bachelor member in 2022; the later master doesn't count
+        AddStudyEnrollment(bachelorThenMaster, _cs, D(2021, 9, 1), StudyStatus.Completed, D(2024, 7, 1));
+        AddStudyEnrollment(bachelorThenMaster, _csMaster, D(2024, 9, 1));
+        var masterOnly = AddMember(D(2024, 9, 1));                       // joins for a master -> new master member in 2025
+        AddStudyEnrollment(masterOnly, _csMaster, D(2024, 9, 1));
+        var joinedDuringMaster = AddMember(D(2024, 10, 1));              // bachelor elsewhere before, joined during the master -> master
+        AddStudyEnrollment(joinedDuringMaster, _cs, D(2020, 9, 1), StudyStatus.Completed, D(2023, 7, 1));
+        AddStudyEnrollment(joinedDuringMaster, _csMaster, D(2023, 9, 1));
+        AddMember(D(2024, 9, 1), gratie: true);                          // no study -> neither
         await _db.SaveChangesAsync();
 
-        var result = await Get(StatisticType.NewBachelorMembersPerYear, StatisticType.NewMasterMembersPerYear);
+        var result = await Get(StatisticType.NewMembersPerYear, StatisticType.NewBachelorMembersPerYear, StatisticType.NewMasterMembersPerYear);
 
         var bachelor = Assert.Single(result.NewBachelorMembersPerYear!);
         Assert.Equal(2022u, bachelor.Year);
@@ -266,6 +269,9 @@ public class StatisticsServiceTests : IDisposable
         var master = Assert.Single(result.NewMasterMembersPerYear!);
         Assert.Equal(2025u, master.Year);
         Assert.Equal(2, master.Count);
+
+        // Both are a part of the new members of that year (3 in 2025, including the gratie member without a study).
+        Assert.Equal(3, result.NewMembersPerYear!.Single(r => r.Year == 2025).Count);
     }
 
     [Fact]

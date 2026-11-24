@@ -142,6 +142,20 @@ export type Activity = {
 };
 
 /**
+ * The number of members that attended exactly Backend.Controllers.DTOs.ActivityCountDTO.Activities activities.
+ */
+export type ActivityCountDto = {
+    /**
+     * The number of activities attended.
+     */
+    activities: number;
+    /**
+     * The number of members that attended exactly that many activities.
+     */
+    members: number;
+};
+
+/**
  * Represents the response DTO for an activity, containing all relevant information about the activity, including its properties and related entities such as enrollments and specification questions. The ActivityResponseDTO is used to transfer comprehensive activity data from the server to the client when retrieving activity information, allowing for a complete representation of the activity's details, enrollment status, and associated specification questions in the response payload.
  */
 export type ActivityResponseDto = {
@@ -599,7 +613,7 @@ export type GetSpecificationQuestionResponseDto = {
     /**
      * Whether this question's answer closes at the activity's unenrollment deadline instead of its enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no longer be given or changed once that deadline passes. Otherwise - or when this is false - the answer remains open until the activity's enrollment deadline, falling back to the activity's end date and time if neither deadline is set.
      */
-    closeOnUnenrollmentDeadline: boolean;
+    closeOnUnenrollmentDeadline?: boolean;
     /**
      * The unique identifier of a specification question, assigned incrementally.
      */
@@ -849,6 +863,23 @@ export type Member = {
      * Used to make sending it idempotent regardless of how many times the confirmation page is visited.
      */
     activationEmailSentAt?: string | null;
+    /**
+     * When the annual study-status update email was last sent to this member, if ever. Used to make
+     * sending it idempotent across retries of the yearly Hangfire job: a run only mails members whose
+     * value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+     * someone already notified earlier in the same run. A 24-hour window (rather than "same calendar
+     * year") is used deliberately so that changing the configured send date to re-trigger the job later
+     * in the same year is not silently skipped for everyone.
+     */
+    studyStatusMailSentAt?: string | null;
+    /**
+     * When the outstanding-payment reminder email was last sent to this member, if ever. Used to make
+     * sending it idempotent across retries of the weekly Hangfire job: a run only mails members whose
+     * value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+     * someone already notified earlier in the same run, while still allowing next week's run to mail
+     * them again if their balance is still outstanding.
+     */
+    outstandingPaymentMailSentAt?: string | null;
     /**
      * The student number of the member.
      */
@@ -1930,6 +1961,85 @@ export type SpecificationQuestion = {
      * The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
      */
     options?: string | null;
+    /**
+     * Whether this question's answer closes at the activity's unenrollment deadline instead of its
+     * enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no
+     * longer be given or changed once that deadline passes. Otherwise - or when this is false - the
+     * answer remains open until the activity's enrollment deadline, falling back to the activity's end
+     * date and time if neither deadline is set.
+     */
+    closeOnUnenrollmentDeadline?: boolean;
+};
+
+/**
+ * Identifies a single statistic that can be requested from the statistics endpoint. Every value maps to exactly one property of Backend.Controllers.DTOs.StatisticsResponseDTO.
+ */
+export type StatisticType = 'TotalMembersPerYear' | 'ActiveEnrollmentsPerStudy' | 'NewMembersPerYear' | 'NewBachelorMembersPerYear' | 'NewMasterMembersPerYear' | 'ActiveMembersPerYear' | 'ActiveMembersPerStudy' | 'InvolvedMembersPerYear' | 'InvolvedMembersPerStudy' | 'ActivitiesPerInvolvedMember' | 'NewMembersPerStudy' | 'FirstYearsAtActivitiesPerYear' | 'NewActiveMembersPerStudy';
+
+/**
+ * The collection of statistics shown on the administrative statistics page. When a single statistic is requested, only the corresponding property is populated and all other properties are null. Deleted (anonymized) member accounts are included in all historical statistics.
+ */
+export type StatisticsResponseDto = {
+    /**
+     * The committee year the point-in-time statistic Backend.Controllers.DTOs.StatisticsResponseDTO.ActiveEnrollmentsPerStudy refers to.
+     */
+    year: number;
+    /**
+     * The moment the point-in-time statistic refers to: now for the current committee year, otherwise the end of the requested year.
+     */
+    snapshotAt: string;
+    /**
+     * The number of members per committee year: at the end of each past year, and now for the current year. A member is someone with an active study enrollment, or an honorary member, "Lid van Verdienste" or gratie member.
+     */
+    totalMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * The number of study enrollments per study that are active at the snapshot moment.
+     */
+    activeEnrollmentsPerStudy?: Array<StudyCountDto> | null;
+    /**
+     * The number of new members per committee year: members that ever followed a study, or are a gratie member, honorary member or "Lid van Verdienste", counted in the year they registered, or in the year their first study starts if that is later.
+     */
+    newMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * The number of new bachelor members per committee year, where a member counts as new in max(registration year, year of their first bachelor enrollment).
+     */
+    newBachelorMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * The number of new master members per committee year, where a member counts as new in max(registration year, year of their first master enrollment).
+     */
+    newMasterMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * The number of unique members per committee year that are part of at least one group, disputes excluded.
+     */
+    activeMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * Per committee year, a histogram of the studies followed by the active members (in at least one non-dispute group) of that year.
+     */
+    activeMembersPerStudy?: Array<YearStudyCountsDto> | null;
+    /**
+     * The number of unique involved members per committee year: members that attended at least one activity that year (confirmed, not on the waiting list).
+     */
+    involvedMembersPerYear?: Array<YearCountDto> | null;
+    /**
+     * Per committee year, a histogram of the studies followed by the involved members (see ) of that year.
+     */
+    involvedMembersPerStudy?: Array<YearStudyCountsDto> | null;
+    /**
+     * Per committee year, how many involved members (see ) attended exactly 1, 2, 3, ... activities that year. Members without any activity are not included.
+     */
+    activitiesPerInvolvedMember?: Array<YearActivityDistributionDto> | null;
+    /**
+     * Per committee year, the new members of that year (see ) per study they followed at the moment they counted as new.
+     */
+    newMembersPerStudy?: Array<YearStudyCountsDto> | null;
+    /**
+     * The number of unique first-years per committee year (all members that are new in that year, see ) that attended at least one activity in that year.
+     */
+    firstYearsAtActivitiesPerYear?: Array<YearCountDto> | null;
+    /**
+     * Per committee year, the new members of that year (see ) that were also active that year (in at least one non-dispute group), per study they followed at the moment they counted as new.
+     */
+    newActiveMembersPerStudy?: Array<YearStudyCountsDto> | null;
 };
 
 /**
@@ -1958,6 +2068,25 @@ export type Study = {
      * The enrollments associated with this study.
      */
     enrollments?: Array<StudyEnrollment>;
+};
+
+/**
+ * A count belonging to a single study. When Backend.Controllers.DTOs.StudyCountDTO.StudyId is null, the count represents members without a (matching) study.
+ */
+export type StudyCountDto = {
+    /**
+     * The id of the study, or null for members without a study.
+     */
+    studyId?: number | null;
+    /**
+     * The title of the study, or null for members without a study.
+     */
+    studyTitle?: string | null;
+    studyType?: StudyType;
+    /**
+     * The count for this study.
+     */
+    count: number;
 };
 
 /**
@@ -2089,6 +2218,48 @@ export type UploadPictureResponse = {
      * Gets or sets the generated path of the uploaded profile picture. This path is typically a relative or encoded reference to the location where the image is stored, which can be used for retrieval or display purposes in the client application.
      */
     path: string | null;
+};
+
+/**
+ * The distribution of attended activities over the involved members of a single committee year.
+ */
+export type YearActivityDistributionDto = {
+    /**
+     * The committee year.
+     */
+    year: number;
+    /**
+     * The number of members per number of attended activities, ascending by activities. Only counts that occur are listed.
+     */
+    distribution: Array<ActivityCountDto>;
+};
+
+/**
+ * A count belonging to a single committee year. The year follows the backend convention of M:Backend.Utils.DateTime.YearUtils.GetYearForDate(System.DateTime,System.String) with the CommitteeCreationDate setting as start date.
+ */
+export type YearCountDto = {
+    /**
+     * The committee year.
+     */
+    year: number;
+    /**
+     * The count for this year.
+     */
+    count: number;
+};
+
+/**
+ * The per-study counts for a single committee year.
+ */
+export type YearStudyCountsDto = {
+    /**
+     * The committee year.
+     */
+    year: number;
+    /**
+     * The counts per study in this year.
+     */
+    studies: Array<StudyCountDto>;
 };
 
 export type GetActivitiesData = {
@@ -7007,6 +7178,87 @@ export type PatchSpecificationanswersByAnswerIdResponses = {
 };
 
 export type PatchSpecificationanswersByAnswerIdResponse = PatchSpecificationanswersByAnswerIdResponses[keyof PatchSpecificationanswersByAnswerIdResponses];
+
+export type GetStatisticsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * The committee year for the point-in-time statistics; defaults to the current year.
+         */
+        year?: number;
+    };
+    url: '/statistics';
+};
+
+export type GetStatisticsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetStatisticsError = GetStatisticsErrors[keyof GetStatisticsErrors];
+
+export type GetStatisticsResponses = {
+    /**
+     * OK
+     */
+    200: StatisticsResponseDto;
+};
+
+export type GetStatisticsResponse = GetStatisticsResponses[keyof GetStatisticsResponses];
+
+export type GetStatisticsByStatisticData = {
+    body?: never;
+    path: {
+        /**
+         * The statistic to retrieve.
+         */
+        statistic: StatisticType;
+    };
+    query?: {
+        /**
+         * The committee year for the point-in-time statistics; defaults to the current year.
+         */
+        year?: number;
+    };
+    url: '/statistics/{statistic}';
+};
+
+export type GetStatisticsByStatisticErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetStatisticsByStatisticError = GetStatisticsByStatisticErrors[keyof GetStatisticsByStatisticErrors];
+
+export type GetStatisticsByStatisticResponses = {
+    /**
+     * OK
+     */
+    200: StatisticsResponseDto;
+};
+
+export type GetStatisticsByStatisticResponse = GetStatisticsByStatisticResponses[keyof GetStatisticsByStatisticResponses];
 
 export type GetStudiesData = {
     body?: never;

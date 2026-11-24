@@ -278,6 +278,7 @@ internal static class ServiceExtensions
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
         services.AddScoped<IStudyService, StudyService>();
+        services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
         services.AddScoped<ISettingsService, SettingsService>();
         services.AddScoped<IRegisterReasonService, RegisterReasonService>();

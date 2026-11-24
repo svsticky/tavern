@@ -577,6 +577,37 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteMember_ClosesActiveStudyEnrollmentsAtDeletionAndKeepsHistory()
+    {
+        // Arrange
+        var memberId = Guid.NewGuid();
+        _db.Members.Add(CreateTestMember(memberId));
+        _db.Studies.Add(new Study { Id = 20, Title = "CS", NominalDurationYears = 3, Type = StudyType.Bachelor });
+        var start = new DateTimeOffset(2023, 9, 1, 0, 0, 0, TimeSpan.Zero);
+        var completed = new DateTimeOffset(2022, 7, 1, 0, 0, 0, TimeSpan.Zero);
+        _db.StudyEnrollments.Add(new StudyEnrollment { MemberId = memberId, StudyId = 20, EnrollmentDate = start, Status = StudyStatus.Enrolled });
+        _db.StudyEnrollments.Add(new StudyEnrollment { MemberId = memberId, StudyId = 20, EnrollmentDate = start.AddYears(-3), CompletionDate = completed, Status = StudyStatus.Completed });
+        await _db.SaveChangesAsync();
+        _paymentValidationService.MemberHasPaidAllActivities(Arg.Any<Member>()).Returns(true);
+        var before = DateTimeOffset.UtcNow;
+
+        // Act
+        await _service.DeleteMember(memberId, _userId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var enrollments = await _db.StudyEnrollments.IgnoreQueryFilters().Where(se => se.MemberId == memberId).ToListAsync();
+        Assert.Equal(2, enrollments.Count);
+        Assert.DoesNotContain(enrollments, se => se.Status == StudyStatus.Enrolled);
+        var closed = Assert.Single(enrollments, se => se.EnrollmentDate == start);
+        Assert.Equal(StudyStatus.DroppedOut, closed.Status);
+        Assert.NotNull(closed.CompletionDate);
+        Assert.True(closed.CompletionDate >= before && closed.CompletionDate <= DateTimeOffset.UtcNow);
+        var untouched = Assert.Single(enrollments, se => se.Status == StudyStatus.Completed);
+        Assert.Equal(completed, untouched.CompletionDate);
+    }
+
+    [Fact]
     public async Task DeleteMember_WithActiveFutureEnrollment_ThrowsInvalidOperationException()
     {
         // Arrange

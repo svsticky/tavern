@@ -359,21 +359,25 @@ export default function Finances() {
         >
           <div className="flex flex-col">
             {membersWithOverduePayment?.map((memberWithOverduePayment) => {
-              const overduePayments = memberWithOverduePayment.enrollments.filter(
+              const overduePayments =
+                memberWithOverduePayment.enrollments.filter(
                   (enrollment) =>
                     enrollment.balance > 0 &&
                     enrollment.enrollment.activity &&
                     new Date(enrollment.enrollment.activity?.paymentDeadline) <
                       new Date(Date.now()),
-                )
-              
+                );
+
               // early return
-              if (overduePayments.length == 0) return null;
+              if (overduePayments.length === 0) return null;
 
               const member = memberWithOverduePayment.member;
 
               //Calculate the overdue balance.
-              const memberBalance = overduePayments.reduce((total, enrollment) => total + enrollment.balance, 0);
+              const memberBalance = overduePayments.reduce(
+                (total, enrollment) => total + enrollment.balance,
+                0,
+              );
 
               const oldestDeadline = new Date(
                 Math.min(
@@ -386,7 +390,7 @@ export default function Finances() {
               );
 
               const threeWeeksDaysAgo = new Date(Date.now() - 1814400000); // 21 * 24 * 60 * 60 * 1000 = 1814400000 millis
-              const isOlderThan21Days = oldestDeadline < threeWeeksDaysAgo
+              const isOlderThan21Days = oldestDeadline < threeWeeksDaysAgo;
 
               return (
                 <div
@@ -395,7 +399,10 @@ export default function Finances() {
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-x-4">
                     <div className="font-semibold text-slate-700">
-                      {member.firstName} {member.lastName} {(memberBalance > 0) ? "- €" + memberBalance.toFixed(2) : ""}
+                      {member.firstName} {member.lastName}{" "}
+                      {memberBalance > 0
+                        ? `- €${memberBalance.toFixed(2)}`
+                        : ""}
                     </div>
 
                     <div className="mt-3 sm:mt-0 row-start-3 sm:row-start-1 sm:col-start-2">

@@ -38,9 +38,6 @@ const FaviconHandler = () => {
 
       const url = URL.createObjectURL(blob);
 
-      // This was a test for favicon bookmarks, but it didn't work in firefox and chromium. Maybe for a later solution
-      // const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
-
       let link = document.querySelector(
         "link[rel~='icon']",
       ) as HTMLLinkElement | null;

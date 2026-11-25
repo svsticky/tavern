@@ -1,3 +1,4 @@
+
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FaviconHandler from "~/components/FavIconHandler";
@@ -7,6 +8,22 @@ describe("FaviconHandler", () => {
     document.querySelectorAll("link[rel~='icon']").forEach((el) => {
       el.remove();
     });
+
+    // Mock matchMedia (not implemented by JSDOM)
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+
     vi.stubGlobal("URL", {
       ...URL,
       createObjectURL: vi.fn(() => "blob:favicon-url"),
@@ -16,6 +33,7 @@ describe("FaviconHandler", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("renders nothing", () => {
@@ -25,7 +43,11 @@ describe("FaviconHandler", () => {
 
   it("creates a link[rel=icon] element when none exists", () => {
     render(<FaviconHandler />);
-    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+
+    const link = document.querySelector(
+      "link[rel~='icon']",
+    ) as HTMLLinkElement;
+
     expect(link).toBeTruthy();
     expect(link.href).toContain("blob:favicon-url");
   });
@@ -38,13 +60,18 @@ describe("FaviconHandler", () => {
     render(<FaviconHandler />);
 
     const links = document.querySelectorAll("link[rel~='icon']");
+
     expect(links.length).toBe(1);
     expect(links[0]).toBe(existing);
   });
 
   it("revokes the blob URL on unmount", () => {
     const { unmount } = render(<FaviconHandler />);
+
     unmount();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:favicon-url");
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith(
+      "blob:favicon-url",
+    );
   });
 });

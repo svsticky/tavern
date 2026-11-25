@@ -19,27 +19,61 @@ import { koalaMarkSvgString } from "./KoalaMark";
  */
 const FaviconHandler = () => {
   useEffect(() => {
-    const rootStyle = getComputedStyle(document.documentElement);
-    const primaryColor =
-      rootStyle.getPropertyValue("--board-primary").trim() || "#f96a1f";
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)"); // darkmode???
 
-    const svgString = koalaMarkSvgString(primaryColor);
+     let currentUrl: string | null = null;
 
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
+     // Theme event handler
+     const updateFavicon = () => { 
+      const rootStyle = getComputedStyle(document.documentElement);
 
-    let link = document.querySelector(
-      "link[rel~='icon']",
-    ) as HTMLLinkElement | null;
+      const primaryColor =
+        rootStyle.getPropertyValue("--board-primary").trim() || "#f96a1f";
 
-    if (!link) {
-      link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-    }
-    link.href = url;
+      const svgString = koalaMarkSvgString(
+        primaryColor,
+        mediaQuery.matches,
+      );
 
-    return () => URL.revokeObjectURL(url);
+      const blob = new Blob([svgString], {
+        type: "image/svg+xml",
+      });
+
+      const url = URL.createObjectURL(blob);
+
+      // This was a test for favicon bookmarks, but it didn't work in firefox and chromium. Maybe for a later solution
+      // const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgString)}`;
+
+      let link = document.querySelector(
+        "link[rel~='icon']",
+      ) as HTMLLinkElement | null;
+
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+
+      link.href = url;
+
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+
+      currentUrl = url;
+    };
+
+    updateFavicon();
+
+    mediaQuery.addEventListener("change", updateFavicon);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateFavicon);
+
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
   }, []);
 
   return null;

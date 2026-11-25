@@ -78,7 +78,7 @@ export const links: Route.LinksFunction = () => [
   },
   {
     rel: "icon",
-    href: "http://localhost:5173/favicon.svg",
+    href: "/favicon.svg",
   },
 ];
 

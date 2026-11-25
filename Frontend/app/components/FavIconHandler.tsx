@@ -19,7 +19,7 @@ import { koalaMarkSvgString } from "./KoalaMark";
  */
 const FaviconHandler = () => {
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)"); // darkmode???
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     let currentUrl: string | null = null;
 

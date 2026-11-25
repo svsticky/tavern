@@ -1,4 +1,3 @@
-
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FaviconHandler from "~/components/FavIconHandler";
@@ -44,9 +43,7 @@ describe("FaviconHandler", () => {
   it("creates a link[rel=icon] element when none exists", () => {
     render(<FaviconHandler />);
 
-    const link = document.querySelector(
-      "link[rel~='icon']",
-    ) as HTMLLinkElement;
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
 
     expect(link).toBeTruthy();
     expect(link.href).toContain("blob:favicon-url");
@@ -70,8 +67,6 @@ describe("FaviconHandler", () => {
 
     unmount();
 
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith(
-      "blob:favicon-url",
-    );
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:favicon-url");
   });
 });

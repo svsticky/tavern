@@ -93,10 +93,7 @@ const KoalaMark = ({ primary = PRIMARY_CSS_VAR }: { primary?: string }) => (
  */
 
 /** Builds a standalone SVG document of the Koala logo. */
-export const koalaMarkSvgString = (
-  primary: string,
-  isDarkMode = false,
-) => {
+export const koalaMarkSvgString = (primary: string, isDarkMode = false) => {
   const darkColorMap: Record<string, string> = {
     "#383735": "#f5f5f4",
     "#292623": "#e7e5e4",
@@ -111,7 +108,7 @@ export const koalaMarkSvgString = (
         fill === PRIMARY
           ? primary
           : isDarkMode
-            ? darkColorMap[fill.toLowerCase()] ?? fill
+            ? (darkColorMap[fill.toLowerCase()] ?? fill)
             : fill;
 
       return `<path d="${d}" fill="${resolvedFill}"/>`;

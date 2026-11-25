@@ -21,19 +21,16 @@ const FaviconHandler = () => {
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)"); // darkmode???
 
-     let currentUrl: string | null = null;
+    let currentUrl: string | null = null;
 
-     // Theme event handler
-     const updateFavicon = () => { 
+    // Theme event handler
+    const updateFavicon = () => {
       const rootStyle = getComputedStyle(document.documentElement);
 
       const primaryColor =
         rootStyle.getPropertyValue("--board-primary").trim() || "#f96a1f";
 
-      const svgString = koalaMarkSvgString(
-        primaryColor,
-        mediaQuery.matches,
-      );
+      const svgString = koalaMarkSvgString(primaryColor, mediaQuery.matches);
 
       const blob = new Blob([svgString], {
         type: "image/svg+xml",

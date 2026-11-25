@@ -162,4 +162,17 @@ public static class YearUtils
     {
         return GetYearForDate(System.DateTime.UtcNow, CommitteeCreationDate);
     }
+
+    /// <summary>
+    /// Gets the relevant active membership year for a specific group (board year if the group is the board group; committee year otherwise).
+    /// </summary>
+    public static uint GetCurrentYearForGroup(PostgresDbContext db, uint groupId)
+    {
+        var setting = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
+        if (uint.TryParse(setting, out uint boardGroupId) && groupId == boardGroupId)
+        {
+            return GetBoardYear(db);
+        }
+        return GetCommitteeYear();
+    }
 }

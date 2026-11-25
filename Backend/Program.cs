@@ -38,7 +38,7 @@ builder.Services.AddSwaggerDocumentation();
 
 string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? string.Empty;
 builder.Services.AddInfrastructureServices(connectionstring, isGeneratingDocs, builder.Configuration);
-builder.Services.AddThirdPartyIntegrations();
+builder.Services.AddThirdPartyIntegrations(builder.Configuration);
 builder.Services.AddServices();
 builder.Services.AddApplicationServices();
 

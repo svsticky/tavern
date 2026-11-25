@@ -4,9 +4,10 @@ import toast from "react-hot-toast";
 import { type GroupType, postGroups } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
-type CreateGroupFormData = {
+export type CreateGroupFormData = {
   name: string;
   type: string;
+  directoryGroupEmail?: string;
   groupPicture: File | null;
 };
 
@@ -41,7 +42,7 @@ export const resetCreateGroupForm = (
   setFormData: React.Dispatch<React.SetStateAction<CreateGroupFormData>>,
   setImagePreview: (preview: string | null) => void,
 ) => {
-  setFormData({ name: "", type: "Committee", groupPicture: null });
+  setFormData({ name: "", type: "Committee", directoryGroupEmail: "", groupPicture: null });
   setImagePreview(null);
 };
 
@@ -86,6 +87,7 @@ export const handleCreateGroupSubmit = ({
         body: {
           Name: formData.name,
           Type: formData.type as GroupType,
+          DirectoryGroupEmail: formData.directoryGroupEmail || undefined,
           GroupPicture: formData.groupPicture,
         },
       });

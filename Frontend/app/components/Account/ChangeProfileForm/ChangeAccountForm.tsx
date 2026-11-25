@@ -36,7 +36,7 @@ export default function ChangeAccountForm({
   member: MemberResponseDto;
 }) {
   const authService = useAuth();
-  const { setMember } = useApp();
+  const { setMember, directoryEnabled } = useApp();
   const [saving, setSaving] = useState(false);
   const [loadingMailingLists, setLoadingMailingLists] = useState(false);
   const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
@@ -96,6 +96,7 @@ export default function ChangeAccountForm({
       city: member.city || "",
       parentPhoneNumber: member.parentPhoneNumber || "",
       preferredLanguage: member.preferredLanguage ?? "EN",
+      directoryEmailOverride: member.directoryEmailOverride || "",
     });
   }, [member]);
 
@@ -181,6 +182,20 @@ export default function ChangeAccountForm({
             </a>
           </div>
         </div>
+        {directoryEnabled && (
+          <Input
+            label={t("directory_email_override")}
+            type="email"
+            placeholder="naam@stickyutrecht.nl"
+            value={formData.directoryEmailOverride || ""}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setFormData({
+                ...formData,
+                directoryEmailOverride: e.target.value,
+              })
+            }
+          />
+        )}
       </FormSection>
 
       <FormSection title={t("address")} columns={3}>

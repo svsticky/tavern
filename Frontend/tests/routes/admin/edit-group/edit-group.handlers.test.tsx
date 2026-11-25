@@ -118,6 +118,7 @@ describe("loadGroupData", () => {
       DefaultGLAccount: "GL1",
       DefaultCostCenter: "CC1",
       DefaultCostUnit: "CU1",
+      DirectoryGroupEmail: "",
     });
     expect(setRoleAliases).toHaveBeenCalledWith([{ id: 1, name: "Chair" }]);
     expect(setGroupPictureSrc).toHaveBeenCalledWith("blob:mock-url");

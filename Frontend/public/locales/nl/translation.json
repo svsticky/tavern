@@ -213,6 +213,19 @@
   "group_info": "Groepsinformatie",
   "group_memberships": "Groepslidmaatschappen",
   "group_name": "Groepsnaam",
+  "directory_group_email": "Directory groeps-e-mail",
+  "sync_directory_group": "Synchroniseer met Directory",
+  "directory_sync_enqueued": "Directory-synchronisatie ingepland",
+  "directory_sync_failed": "Synchronisatie met directory mislukt",
+  "directory_settings": "Directory-synchronisatie",
+  "directory_enabled": "Directory-synchronisatie inschakelen",
+  "directory_dry_run": "Proefdraaien (dry-run)",
+  "directory_provider": "Directory provider",
+  "directory_domain": "Domeinnaam",
+  "directory_admin_email": "Beheerdersaccount e-mail",
+  "directory_key_json": "Google Service Account Key (JSON)",
+  "directory_key_path": "Google Service Account Bestandspad (optioneel)",
+  "directory_email_override": "Directory e-mail override",
   "group_type": "Groepstype",
   "groups": "Groepen",
   "home": "Home",
@@ -687,5 +700,6 @@
   "statistics_activity_distribution_subtitle": "Hoeveel leden in {{year}} naar 1, 2, 3 of meer activiteiten gingen. Leden die naar geen enkele activiteit gingen, staan er niet in.",
   "statistics_activities_count_one": "{{count}} activiteit",
   "statistics_activities_count_other": "{{count}} activiteiten",
-  "statistics_activities_range": "{{from}} tot en met {{to}} activiteiten"
+  "statistics_activities_range": "{{from}} tot en met {{to}} activiteiten",
+  "cannot_save_settings_missing_fields": "Kan instellingen niet opslaan omdat de volgende verplichte velden ontbreken"
 }

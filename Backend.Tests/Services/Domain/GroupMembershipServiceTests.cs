@@ -29,6 +29,7 @@ public class GroupMembershipServiceTests : IDisposable
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly AuthOutboxWorker _authOutboxWorker;
+    private readonly DirectoryOutboxWorker _directoryOutboxWorker;
     private readonly GroupMembershipService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -46,11 +47,13 @@ public class GroupMembershipServiceTests : IDisposable
 
         _permissionService = Substitute.For<IPermissionService>();
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, null);
+        _directoryOutboxWorker = Substitute.For<DirectoryOutboxWorker>(null, null);
 
         _service = new GroupMembershipService(
             _db,
             _permissionService,
             _authOutboxWorker,
+            _directoryOutboxWorker,
             NullLogger<GroupMembershipService>.Instance
         );
     }

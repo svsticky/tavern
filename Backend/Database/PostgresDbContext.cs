@@ -62,6 +62,8 @@ public class PostgresDbContext : DbContext
     public DbSet<ExternalLink> ExternalLinks { get; set; }
     /// <summary>Reference to the CuratedMailinglists relational table. </summary>
     public DbSet<CuratedMailinglist> CuratedMailinglists { get; set; }
+    /// <summary>Reference to the DirectoryOutboxTasks relational table. </summary>
+    public DbSet<DirectoryOutboxTask> DirectoryOutboxTasks { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
@@ -149,6 +151,17 @@ public class PostgresDbContext : DbContext
             entity.HasIndex(m => m.StudentNumber)
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
+
+            entity.HasIndex(m => m.DirectoryEmailOverride)
+                .IsUnique()
+                .HasFilter("\"DirectoryEmailOverride\" IS NOT NULL AND \"IsDeleted\" = false");
+        });
+
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasIndex(g => g.DirectoryGroupEmail)
+                .IsUnique()
+                .HasFilter("\"DirectoryGroupEmail\" IS NOT NULL");
         });
 
         modelBuilder.Entity<Activity>(entity =>

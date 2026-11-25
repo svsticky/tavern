@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, RefreshCwIcon } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
@@ -30,6 +30,7 @@ import {
   handleGroupProfilePictureUpload,
   handleRoleAliasAdded,
   handleSaveGroup,
+  handleSyncDirectoryGroup,
   handleUpdateGroupRole,
   loadGroupData,
   loadGroupMemberships,
@@ -54,6 +55,7 @@ import {
  * @component
  */
 export default function EditGroupPage() {
+  const { directoryEnabled } = useApp();
   const params = useParams();
   const id = params.id ? parseInt(params.id, 10) : null;
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,7 @@ export default function EditGroupPage() {
   const [addRoleModalIsOpen, setAddRoleModalIsOpen] = useState(false);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [loadingChangeRole, setLoadingChangeRole] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const [formData, setFormData] = useState<EditGroupFormData>({
     Name: "",
@@ -76,6 +79,7 @@ export default function EditGroupPage() {
     DefaultGLAccount: "",
     DefaultCostCenter: "",
     DefaultCostUnit: "",
+    DirectoryGroupEmail: "",
     Active: false,
   });
 
@@ -278,6 +282,30 @@ export default function EditGroupPage() {
                 setFormData({ ...formData, DefaultCostUnit: e.target.value })
               }
             />
+            {directoryEnabled && (
+              <div className="flex flex-col gap-2">
+                <Input
+                  label={t("directory_group_email")}
+                  value={formData.DirectoryGroupEmail}
+                  placeholder="commissie@stickyutrecht.nl"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, DirectoryGroupEmail: e.target.value })
+                  }
+                />
+                {formData.DirectoryGroupEmail && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-fit text-xs flex items-center gap-1.5"
+                    onClick={() => handleSyncDirectoryGroup(id, setSyncing)}
+                    disabled={syncing || loading}
+                  >
+                    <RefreshCwIcon className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
+                    {t("sync_directory_group")}
+                  </Button>
+                )}
+              </div>
+            )}
             <Input
               label={t("active")}
               type="checkbox"

@@ -225,12 +225,12 @@ export const handleSaveSettings = async ({
 
       for (const [name, value] of Object.entries(settings)) {
         if (newSettings.has(name)) {
-          promises.push(postSettings({ query: { id: name, value } }));
+          promises.push(postSettings({ query: { id: name, value: value ?? "" } }));
         } else {
           promises.push(
             patchSettingsById({
               path: { id: name },
-              body: [{ op: "replace", path: "/Value", value }] as any,
+              body: [{ op: "replace", path: "/Value", value: value ?? "" }] as any,
             }),
           );
         }

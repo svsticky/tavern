@@ -23,6 +23,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useApp } from "~/context/AppContext";
 import { formatDate } from "~/util/date.util";
 import {
   handleAddEnrollment,
@@ -54,6 +55,7 @@ import {
  * @component
  */
 export default function EditMemberPage() {
+  const { directoryEnabled } = useApp();
   const navigate = useNavigate();
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,7 @@ export default function EditMemberPage() {
     begunstiger: false,
     suspended: false,
     dateOfBirth: "",
+    directoryEmailOverride: "",
   });
 
   const enrollmentColumns: Column<StudyEnrollmentResponseDto>[] = [
@@ -219,6 +222,20 @@ export default function EditMemberPage() {
               value={email}
               disabled
             />
+            {directoryEnabled && (
+              <Input
+                label={t("directory_email_override")}
+                type="email"
+                placeholder="naam@stickyutrecht.nl"
+                value={formData.directoryEmailOverride}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({
+                    ...formData,
+                    directoryEmailOverride: e.target.value,
+                  })
+                }
+              />
+            )}
           </FormSection>
 
           {/* Contact & Adres */}

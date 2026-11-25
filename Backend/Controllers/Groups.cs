@@ -238,4 +238,24 @@ public class GroupsController(IGroupService groupService) : ControllerBase
         await groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
         return NoContent();
     }
+
+    // POST: groups/5/sync-directory
+    /// <summary>
+    /// Enqueues synchronization of the group's memberships with the external directory provider.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group to synchronize.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>An accepted status when the task is enqueued.</returns>
+    [HttpPost("{id}/sync-directory")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SyncDirectory(uint id, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        await groupService.SyncDirectoryGroupAsync(id, userId, cancellationToken);
+        return Accepted(new { Message = "Directory group synchronization enqueued." });
+    }
 }

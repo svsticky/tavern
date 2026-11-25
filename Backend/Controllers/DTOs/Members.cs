@@ -28,6 +28,11 @@ public class PostMemberDTO
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
+    /// <inheritdoc cref="Member.DirectoryEmailOverride"/>
+    [StringLength(100)]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
+    public string? DirectoryEmailOverride { get; set; }
+
     /// <inheritdoc cref="Member.PhoneNumber"/>
     [Required(AllowEmptyStrings = false)]
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
@@ -97,6 +102,9 @@ public class MemberResponseDTO
     /// <inheritdoc cref="Member.Email"/>
     [EmailAddress]
     public string? Email { get; set; }
+
+    /// <inheritdoc cref="Member.DirectoryEmailOverride"/>
+    public string? DirectoryEmailOverride { get; set; }
 
     /// <inheritdoc cref="Member.PhoneNumber"/>
     public string? PhoneNumber { get; set; }
@@ -171,6 +179,7 @@ public class MemberResponseDTO
             FirstName = m.FirstName,
             LastName = m.LastName,
             Email = isBoard || userId == m.Id ? m.Email : null,
+            DirectoryEmailOverride = isBoard || userId == m.Id ? m.DirectoryEmailOverride : null,
             PhoneNumber = isBoard || userId == m.Id ? m.PhoneNumber : null,
             Street = isBoard || userId == m.Id ? m.Street : null,
             HouseNumber = isBoard || userId == m.Id ? m.HouseNumber : null,
@@ -226,6 +235,11 @@ public class MemberUpdateDTO
     [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
+
+    /// <inheritdoc cref="Member.DirectoryEmailOverride"/>
+    [StringLength(100)]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
+    public string? DirectoryEmailOverride { get; set; }
 
     /// <inheritdoc cref="Member.PhoneNumber"/>
     [Required(AllowEmptyStrings = false)]

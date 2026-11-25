@@ -6,6 +6,7 @@ using Backend.Services;
 using Backend.Services.AccountingToolServices;
 using Backend.Services.AuthServices;
 using Backend.Services.Domain;
+using Backend.Services.DirectoryServices;
 using Backend.Services.FileCompressServices;
 using Backend.Services.MailServices;
 using Backend.Services.MailSubscriptionServices;
@@ -17,6 +18,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Diagnostics.CodeAnalysis;
@@ -201,7 +203,7 @@ internal static class ServiceExtensions
         return services;
     }
 
-    internal static IServiceCollection AddThirdPartyIntegrations(this IServiceCollection services)
+    internal static IServiceCollection AddThirdPartyIntegrations(this IServiceCollection services, IConfiguration configuration)
     {
         // Payments
         services.AddScoped<MollieService>();
@@ -259,6 +261,23 @@ internal static class ServiceExtensions
             };
         });
 
+        // Directory Services
+        services.AddScoped<IDirectoryOptionsProvider, DirectoryOptionsProvider>();
+        services.AddScoped<DirectoryOptions>(sp => sp.GetRequiredService<IDirectoryOptionsProvider>().GetOptions());
+        services.AddScoped(sp => new GoogleWorkspaceDirectoryService(
+            sp.GetRequiredService<IDirectoryOptionsProvider>(),
+            sp.GetRequiredService<ILogger<GoogleWorkspaceDirectoryService>>()));
+        services.AddScoped<IDirectoryGroupSyncService>(sp =>
+        {
+            var options = sp.GetRequiredService<IDirectoryOptionsProvider>().GetOptions();
+
+            return options.Provider.ToUpperInvariant() switch
+            {
+                "GOOGLE" or "GOOGLEWORKSPACE" => sp.GetRequiredService<GoogleWorkspaceDirectoryService>(),
+                _ => sp.GetRequiredService<GoogleWorkspaceDirectoryService>()
+            };
+        });
+
         return services;
     }
 
@@ -289,6 +308,7 @@ internal static class ServiceExtensions
 
         services.AddScoped<INameChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
         services.AddScoped<IMailChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
+        services.AddScoped<IMailChangedListener, DirectoryMailChangedListener>();
 
         return services;
     }
@@ -302,6 +322,8 @@ internal static class ServiceExtensions
         services.AddHostedService<YearSettingsRefreshWorker>();
         services.AddSingleton<MailSubscriptionOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
+        services.AddSingleton<DirectoryOutboxWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<DirectoryOutboxWorker>());
 
         services.AddScoped<IFileCompressService, FileCompressService>();
         services.AddScoped<IPaymentValidationService, PaymentValidationService>();

@@ -9,6 +9,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
+using Backend.Services.OutboxWorkers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
@@ -32,6 +33,7 @@ public class GroupServiceTests : IDisposable
     private readonly IFileCompressService _fileCompressor;
     private readonly IStorageService _storageService;
     private readonly IMemoryCache _memoryCache;
+    private readonly DirectoryOutboxWorker _directoryOutboxWorker;
     private readonly GroupService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -51,6 +53,7 @@ public class GroupServiceTests : IDisposable
         _fileCompressor = Substitute.For<IFileCompressService>();
         _storageService = Substitute.For<IStorageService>();
         _memoryCache = Substitute.For<IMemoryCache>();
+        _directoryOutboxWorker = Substitute.For<DirectoryOutboxWorker>(null, null);
 
         _service = new GroupService(
             _db,
@@ -58,6 +61,7 @@ public class GroupServiceTests : IDisposable
             _fileCompressor,
             _storageService,
             _memoryCache,
+            _directoryOutboxWorker,
             NullLogger<GroupService>.Instance
         );
     }

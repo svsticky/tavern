@@ -91,4 +91,12 @@ public interface IGroupService
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The candidate board group ID.</returns>
     Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Enqueues a synchronization task for the external directory group associated with this group.
+    /// </summary>
+    /// <param name="groupId">The group ID.</param>
+    /// <param name="userId">The ID of the requesting user.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    Task SyncDirectoryGroupAsync(uint groupId, Guid userId, CancellationToken cancellationToken);
 }

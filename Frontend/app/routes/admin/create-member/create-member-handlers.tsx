@@ -23,6 +23,7 @@ export type CreateBegunstigerFormData = {
   studentNumber: string;
   language: Language;
   isBegunstiger: boolean;
+  directoryEmailOverride: string;
 };
 
 /**
@@ -95,6 +96,7 @@ export const handleCreateSubmit = async ({
         preferredLanguage: formData.language,
         studyEnrollments: [],
         begunstiger: formData.isBegunstiger,
+        directoryEmailOverride: formData.directoryEmailOverride?.trim() || null,
       };
 
       const response = await postMembers({ body: payload });

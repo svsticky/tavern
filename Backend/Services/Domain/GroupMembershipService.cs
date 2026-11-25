@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.OutboxWorkers;
+using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -17,20 +18,28 @@ public class GroupMembershipService : IGroupMembershipService
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly AuthOutboxWorker _authOutboxWorker;
+    private readonly DirectoryOutboxWorker _directoryOutboxWorker;
     private readonly ILogger<GroupMembershipService> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the authentication outbox worker for synchronizing membership changes with the configured auth system, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
     /// <param name="authOutboxWorker">The authentication outbox worker.</param>
+    /// <param name="directoryOutboxWorker">The directory outbox worker.</param>
     /// <param name="logger">The logger.</param>
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, AuthOutboxWorker authOutboxWorker, ILogger<GroupMembershipService> logger)
+    public GroupMembershipService(
+        PostgresDbContext db,
+        IPermissionService permissionService,
+        AuthOutboxWorker authOutboxWorker,
+        DirectoryOutboxWorker directoryOutboxWorker,
+        ILogger<GroupMembershipService> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _authOutboxWorker = authOutboxWorker;
+        _directoryOutboxWorker = directoryOutboxWorker;
         _logger = logger;
     }
 
@@ -120,6 +129,13 @@ public class GroupMembershipService : IGroupMembershipService
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, _db);
 
+            if (!string.IsNullOrWhiteSpace(group.DirectoryGroupEmail) &&
+                membership.MembershipYear == YearUtils.GetCurrentYearForGroup(_db, group.Id) &&
+                !string.IsNullOrWhiteSpace(member.GetDirectoryEmail()))
+            {
+                _directoryOutboxWorker.EnqueueAddMemberTask(group.DirectoryGroupEmail, member.GetDirectoryEmail(), _db);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
@@ -141,6 +157,7 @@ public class GroupMembershipService : IGroupMembershipService
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
+            .Include(g => g.Group)
             .FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
 
         if (membership == null)
@@ -153,6 +170,14 @@ public class GroupMembershipService : IGroupMembershipService
             _db.GroupMemberships.Remove(membership);
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
+
+            if (membership.Group != null &&
+                !string.IsNullOrWhiteSpace(membership.Group.DirectoryGroupEmail) &&
+                membership.MembershipYear == YearUtils.GetCurrentYearForGroup(_db, membership.GroupId) &&
+                !string.IsNullOrWhiteSpace(membership.Member?.GetDirectoryEmail()))
+            {
+                _directoryOutboxWorker.EnqueueRemoveMemberTask(membership.Group.DirectoryGroupEmail, membership.Member.GetDirectoryEmail(), _db);
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);

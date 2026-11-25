@@ -87,4 +87,12 @@ public class Group
     /// The filename of the picture for the group, if any.
     /// </summary>
     public string? GroupPictureFileName { get; set; }
+
+    /// <summary>
+    /// The optional external directory group email address (e.g., commissie@stickyutrecht.nl)
+    /// linked to this group for automated membership synchronization across directory providers.
+    /// </summary>
+    [StringLength(255)]
+    [EmailAddress]
+    public string? DirectoryGroupEmail { get; set; }
 }

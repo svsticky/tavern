@@ -67,6 +67,14 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
         await EnsureSettingExists(db, "ListmonkUser", "");
         await EnsureSettingExists(db, "ListmonkApiKey", "");
 
+        await EnsureSettingExists(db, "DirectoryEnabled", "false");
+        await EnsureSettingExists(db, "DirectoryDryRun", "false");
+        await EnsureSettingExists(db, "DirectoryProvider", "GoogleWorkspace");
+        await EnsureSettingExists(db, "DirectoryGoogleWorkspaceDomain", "");
+        await EnsureSettingExists(db, "DirectoryGoogleWorkspaceImpersonatedAdminEmail", "");
+        await EnsureSettingExists(db, "DirectoryGoogleWorkspaceKeyPath", "");
+        await EnsureSettingExists(db, "DirectoryGoogleWorkspaceKeyJson", "");
+
         await EnsureSettingExists(db, "PaymentServiceFee", "0.39");
 
         await EnsureSettingExists(db, "PaymentServiceFeeGLAccount", "5007");
@@ -103,11 +111,33 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
 
         await EnsureSettingExists(db, "BegunstigerVATCode", "0");
 
-        await EnsureSettingExists(db, "MainBoardMail", "");
+        bool isDev = environment.IsDevelopment();
 
-        await EnsureSettingExists(db, "FinancialEmailSender", "");
+        await EnsureSettingExists(db, "MainBoardMail", isDev ? "bestuur@svsticky.nl" : "");
 
-        await EnsureSettingExists(db, "ActivityUpdateEmailSender", "");
+        await EnsureSettingExists(db, "FinancialEmailSender", isDev ? "penningmeester@svsticky.nl" : "");
+
+        await EnsureSettingExists(db, "ActivityUpdateEmailSender", isDev ? "activiteiten@svsticky.nl" : "");
+
+        if (isDev)
+        {
+            var mainMail = await db.Settings.FindAsync("MainBoardMail");
+            if (mainMail != null && string.IsNullOrWhiteSpace(mainMail.Value))
+            {
+                mainMail.Value = "bestuur@svsticky.nl";
+            }
+            var finMail = await db.Settings.FindAsync("FinancialEmailSender");
+            if (finMail != null && string.IsNullOrWhiteSpace(finMail.Value))
+            {
+                finMail.Value = "penningmeester@svsticky.nl";
+            }
+            var actMail = await db.Settings.FindAsync("ActivityUpdateEmailSender");
+            if (actMail != null && string.IsNullOrWhiteSpace(actMail.Value))
+            {
+                actMail.Value = "activiteiten@svsticky.nl";
+            }
+            await db.SaveChangesAsync();
+        }
 
         await EnsureSettingExists(db, "MembershipPaymentExpirationTime", ""); // If empty, no expiration time will be set on payments, and they will not automatically expire.
 

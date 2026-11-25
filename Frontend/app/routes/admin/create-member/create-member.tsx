@@ -9,6 +9,7 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import RequiredAsterisk from "~/components/UI/RequiredAstrix";
 import Select from "~/components/UI/Select";
+import { useApp } from "~/context/AppContext";
 import { calculateAge } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import {
@@ -27,6 +28,7 @@ import {
  * @page
  */
 export default function CreateBegunstigerPage() {
+  const { directoryEnabled } = useApp();
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -45,6 +47,7 @@ export default function CreateBegunstigerPage() {
     studentNumber: "",
     language: "NL" as Language,
     isBegunstiger: false,
+    directoryEmailOverride: "",
   });
 
   const languageOptions = [
@@ -59,6 +62,9 @@ export default function CreateBegunstigerPage() {
     const allFieldsFilled = Object.entries(formData).every(([key, value]) => {
       if (typeof value === "boolean") return true;
       if (key === "parentPhone" && isAdult) {
+        return true;
+      }
+      if (key === "directoryEmailOverride") {
         return true;
       }
       return value.trim() !== "";
@@ -123,6 +129,19 @@ export default function CreateBegunstigerPage() {
             disabled={loading}
             required
           />
+          {directoryEnabled && (
+            <Input
+              label={t("directory_email_override")}
+              name="directoryEmailOverride"
+              type="email"
+              placeholder="naam@stickyutrecht.nl"
+              value={formData.directoryEmailOverride}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleCreateBegunstigerInputChange(e, setFormData)
+              }
+              disabled={loading}
+            />
+          )}
           <Input
             label={t("birth_date")}
             name="birthDate"

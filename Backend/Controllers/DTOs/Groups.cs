@@ -17,6 +17,11 @@ public class PostGroupDTO
     /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
 
+    /// <inheritdoc cref="Group.DirectoryGroupEmail"/>
+    [StringLength(255)]
+    [EmailAddress]
+    public string? DirectoryGroupEmail { get; set; }
+
     /// <summary>
     /// The group picture file to be uploaded and associated with the newly created group. This field is optional and can be included in the request to provide a visual representation of the group, allowing for better identification and differentiation of groups within the system. If provided, the group picture will be processed and stored appropriately based on the application's file handling and storage mechanisms.
     /// </summary>
@@ -66,6 +71,9 @@ public class GroupResponseDTO
     /// <inheritdoc cref="Group.GroupPicturePath"/>
     public string? GroupPicturePath { get; set; }
 
+    /// <inheritdoc cref="Group.DirectoryGroupEmail"/>
+    public string? DirectoryGroupEmail { get; set; }
+
     /// <summary>
     /// Projects a Group entity into a GroupResponseDTO, including relevant group information such as its name, type, active status, and picture path. This projection is used to transform the data from the Group model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
@@ -82,7 +90,8 @@ public class GroupResponseDTO
             GLAccountId = isBoard ? g.DefaultGLAccount : null,
             CostCenterId = isBoard ? g.DefaultCostCenter : null,
             CostUnitId = isBoard ? g.DefaultCostUnit : null,
-            GroupPicturePath = g.GroupPicturePath
+            GroupPicturePath = g.GroupPicturePath,
+            DirectoryGroupEmail = isBoard ? g.DirectoryGroupEmail : null
         };
     }
 }
@@ -102,4 +111,9 @@ public class GroupUpdateDTO
 
     /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
+
+    /// <inheritdoc cref="Group.DirectoryGroupEmail"/>
+    [StringLength(255)]
+    [EmailAddress]
+    public string? DirectoryGroupEmail { get; set; }
 }

@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
+import { AppContext } from "~/context/AppContext";
+import { fireEvent, renderWithProviders as render, screen } from "~/testUtils";
 
 const { handleCreateGroupSubmit, handleFileChange, resetCreateGroupForm } =
   vi.hoisted(() => ({
@@ -134,5 +135,43 @@ describe("CreateGroupOverlay", () => {
     fireEvent.click(screen.getByText("upload_picture").parentElement!);
 
     expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it("does not render group_email input when directory is disabled", () => {
+    render(<CreateGroupOverlay onSuccess={vi.fn()} />);
+    expect(screen.queryByLabelText(/group_email/)).not.toBeInTheDocument();
+  });
+
+  it("renders group_email input when directory is enabled", () => {
+    render(
+      <AppContext.Provider
+        value={
+          {
+            directoryEnabled: true,
+            setDirectoryEnabled: vi.fn(),
+            member: null,
+            setMember: vi.fn(),
+            boardGroupId: null,
+            setBoardGroupId: vi.fn(),
+            candidateBoardGroupId: null,
+            setCandidateBoardGroupId: vi.fn(),
+            logoUrl: null,
+            setLogoUrl: vi.fn(),
+            faviconUrl: null,
+            setFaviconUrl: vi.fn(),
+            primaryColor: null,
+            setPrimaryColor: vi.fn(),
+            secondaryColor: null,
+            setSecondaryColor: vi.fn(),
+            associationName: null,
+            setAssociationName: vi.fn(),
+          } as any
+        }
+      >
+        <CreateGroupOverlay onSuccess={vi.fn()} />
+      </AppContext.Provider>,
+      { withAppProvider: false },
+    );
+    expect(screen.getByLabelText(/group_email/)).toBeInTheDocument();
   });
 });

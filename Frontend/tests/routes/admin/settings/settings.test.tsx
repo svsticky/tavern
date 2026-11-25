@@ -187,6 +187,9 @@ describe("SettingsPage", () => {
       name: "save_all_settings",
     });
     expect(saveButton).toBeDisabled();
+    expect(
+      screen.getByText("cannot_save_settings_missing_fields:"),
+    ).toBeInTheDocument();
   });
 
   it("enables save once all required fields are present and calls handleSaveSettings", async () => {
@@ -247,6 +250,9 @@ describe("SettingsPage", () => {
       name: "save_all_settings",
     });
     expect(saveButton).toBeDisabled();
+    expect(
+      screen.getByText("cannot_save_settings_missing_fields:"),
+    ).toBeInTheDocument();
   });
 
   it("renders the begunstiger accounting fields when ACCOUNTING_ENABLED is true", async () => {

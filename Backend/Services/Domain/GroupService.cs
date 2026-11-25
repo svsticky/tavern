@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -19,23 +20,19 @@ public class GroupService : IGroupService
     private readonly IFileCompressService _fileCompressService;
     private readonly IStorageService _storageService;
     private readonly IMemoryCache _memoryCache;
+    private readonly DirectoryOutboxWorker _directoryOutboxWorker;
     private readonly ILogger<GroupService> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the GroupService class with the specified dependencies. The constructor sets up the necessary services for managing groups, including database access, permission checks, file compression for group pictures, storage service for saving group pictures, and logging for monitoring group-related operations. This setup allows the GroupService to effectively handle group creation, retrieval, updating, deletion, and picture management while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupService class with the specified dependencies.
     /// </summary>
-    /// <param name="db">The database context.</param>
-    /// <param name="permissionService">The permission service.</param>
-    /// <param name="fileCompressService">The file compression service.</param>
-    /// <param name="storageService">The storage service.</param>
-    /// <param name="memoryCache">The memory cache service.</param>
-    /// <param name="logger">The logger.</param>
     public GroupService(
         PostgresDbContext db,
         IPermissionService permissionService,
         IFileCompressService fileCompressService,
         IStorageService storageService,
         IMemoryCache memoryCache,
+        DirectoryOutboxWorker directoryOutboxWorker,
         ILogger<GroupService> logger)
     {
         _db = db;
@@ -43,6 +40,7 @@ public class GroupService : IGroupService
         _fileCompressService = fileCompressService;
         _storageService = storageService;
         _memoryCache = memoryCache;
+        _directoryOutboxWorker = directoryOutboxWorker;
         _logger = logger;
     }
 
@@ -92,7 +90,8 @@ public class GroupService : IGroupService
             var group = new Group
             {
                 Name = dto.Name,
-                Type = dto.Type
+                Type = dto.Type,
+                DirectoryGroupEmail = dto.DirectoryGroupEmail
             };
 
             if (dto.GroupPicture != null)
@@ -103,6 +102,12 @@ public class GroupService : IGroupService
             StateValidator.Validate(group);
 
             _db.Groups.Add(group);
+
+            if (!string.IsNullOrWhiteSpace(group.DirectoryGroupEmail))
+            {
+                _directoryOutboxWorker.EnqueueReconcileGroupTask(group.DirectoryGroupEmail, _db);
+            }
+
             await _db.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
@@ -178,12 +183,19 @@ public class GroupService : IGroupService
             throw new ArgumentException("Cannot modify Id field.");
 
         var group = await GetGroupOrThrow(id, cancellationToken);
+        var oldDirectoryEmail = group.DirectoryGroupEmail;
 
         patchDoc.ApplyTo(group);
 
         StateValidator.Validate(group);
 
         GroupValidator.ValidateName(group.Name);
+
+        if (!string.IsNullOrWhiteSpace(group.DirectoryGroupEmail) &&
+            !string.Equals(group.DirectoryGroupEmail, oldDirectoryEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            _directoryOutboxWorker.EnqueueReconcileGroupTask(group.DirectoryGroupEmail, _db);
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
     }
@@ -197,13 +209,37 @@ public class GroupService : IGroupService
         GroupValidator.ValidateName(dto.Name);
 
         var group = await GetGroupOrThrow(id, cancellationToken);
+        var oldDirectoryEmail = group.DirectoryGroupEmail;
 
         group.Name = dto.Name;
         group.Active = dto.Active;
         group.Type = dto.Type;
+        group.DirectoryGroupEmail = dto.DirectoryGroupEmail;
 
         StateValidator.Validate(group);
 
+        if (!string.IsNullOrWhiteSpace(group.DirectoryGroupEmail) &&
+            !string.Equals(group.DirectoryGroupEmail, oldDirectoryEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            _directoryOutboxWorker.EnqueueReconcileGroupTask(group.DirectoryGroupEmail, _db);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SyncDirectoryGroupAsync(uint groupId, Guid userId, CancellationToken cancellationToken)
+    {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Enqueuing directory sync for group {GroupId} by user {UserId}.", groupId, userId);
+
+        var group = await GetGroupOrThrow(groupId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(group.DirectoryGroupEmail))
+        {
+            throw new InvalidOperationException("Group does not have a linked directory group email.");
+        }
+
+        _directoryOutboxWorker.EnqueueReconcileGroupTask(group.DirectoryGroupEmail, _db);
         await _db.SaveChangesAsync(cancellationToken);
     }
 

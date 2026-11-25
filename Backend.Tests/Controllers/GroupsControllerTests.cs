@@ -408,4 +408,15 @@ public class GroupsControllerTests
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutGroup(1, dto, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task SyncDirectory_Success_ReturnsAccepted()
+    {
+        // Act
+        var result = await _controller.SyncDirectory(1, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<AcceptedResult>(result);
+        await _serviceMock.Received(1).SyncDirectoryGroupAsync(1, _userId, Arg.Any<CancellationToken>());
+    }
 }

@@ -29,7 +29,8 @@ namespace Backend.Services.Domain
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
         ILogger<MemberService> logger,
-        IEnumerable<INameChangedListener> nameChangedListeners
+        IEnumerable<INameChangedListener> nameChangedListeners,
+        DirectoryOutboxWorker? directoryOutboxWorker = null
     ) : IMemberService
     {
         /// <inheritdoc />
@@ -259,6 +260,7 @@ namespace Backend.Services.Domain
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
+            var oldEffectiveDirEmail = member.GetDirectoryEmail();
 
             try
             {
@@ -271,6 +273,12 @@ namespace Backend.Services.Domain
                 if (member.FirstName != oldFirstName || member.LastName != oldLastName)
                 {
                     nameChangedListeners.NotifyNameChanged(member, db);
+                }
+
+                var newEffectiveDirEmail = member.GetDirectoryEmail();
+                if (!string.Equals(oldEffectiveDirEmail, newEffectiveDirEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    directoryOutboxWorker?.EnqueueMigrateMemberEmailForActiveGroupsTask(member.Id, oldEffectiveDirEmail, newEffectiveDirEmail, db);
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -309,6 +317,7 @@ namespace Backend.Services.Domain
             }
 
             var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
+            var oldEffectiveDirEmail = member.GetDirectoryEmail();
 
             try
             {
@@ -321,6 +330,12 @@ namespace Backend.Services.Domain
                 if (member.FirstName != oldFirstName || member.LastName != oldLastName)
                 {
                     nameChangedListeners.NotifyNameChanged(member, db);
+                }
+
+                var newEffectiveDirEmail = member.GetDirectoryEmail();
+                if (!string.Equals(oldEffectiveDirEmail, newEffectiveDirEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    directoryOutboxWorker?.EnqueueMigrateMemberEmailForActiveGroupsTask(member.Id, oldEffectiveDirEmail, newEffectiveDirEmail, db);
                 }
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -569,7 +584,8 @@ namespace Backend.Services.Domain
                 PreferredLanguage = dto.PreferredLanguage,
                 RegisteredOn = DateTimeOffset.UtcNow,
                 StudyEnrollments = new List<StudyEnrollment>(),
-                Begunstiger = dto.Begunstiger != null ? dto.Begunstiger.Value : false
+                Begunstiger = dto.Begunstiger != null ? dto.Begunstiger.Value : false,
+                DirectoryEmailOverride = dto.DirectoryEmailOverride
             };
         }
 
@@ -617,6 +633,7 @@ namespace Backend.Services.Domain
             member.EreLid = dto.EreLid;
             member.Begunstiger = dto.Begunstiger;
             member.Suspended = dto.Suspended;
+            member.DirectoryEmailOverride = dto.DirectoryEmailOverride;
         }
 
         private void AddStudyEnrollments(Guid memberId, IEnumerable<PostStudyEnrollmentDTO> studyEnrollments)

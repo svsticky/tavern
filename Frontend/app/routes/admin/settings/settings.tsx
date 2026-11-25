@@ -21,6 +21,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import TextArea from "~/components/UI/TextArea";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import {
@@ -81,18 +82,29 @@ export default function SettingsPage() {
   const [isPromotingBoard, setIsPromotingBoard] = useState(false);
   const [confirmModal, confirm] = useConfirm();
 
-  const requiredFieldMissing =
-    !settings.BoardGroupId ||
-    !settings.CandidateBoardGroupId ||
-    !settings.PaymentServiceFee ||
-    !settings.MembershipPrice ||
-    !settings.BegunstigerPrice ||
-    !settings.FinancialEmailSender ||
-    !settings.MainBoardMail ||
-    !settings.ActivityUpdateEmailSender ||
-    !settings.FinancialYearStartDate ||
-    !settings.CommitteeCreationDate ||
-    !settings.YearlyMailSendDate;
+  const missingFieldLabels: string[] = [];
+  if (!settings.BoardGroupId) missingFieldLabels.push(t("board_group"));
+  if (!settings.CandidateBoardGroupId)
+    missingFieldLabels.push(t("candidate_board_group"));
+  if (!settings.PaymentServiceFee)
+    missingFieldLabels.push(t("payment_service_fee"));
+  if (!settings.MembershipPrice)
+    missingFieldLabels.push(t("membership_price"));
+  if (!settings.BegunstigerPrice)
+    missingFieldLabels.push(t("begunstiger_price"));
+  if (!settings.FinancialEmailSender)
+    missingFieldLabels.push(t("financial_email_sender"));
+  if (!settings.MainBoardMail) missingFieldLabels.push(t("main_board_email"));
+  if (!settings.ActivityUpdateEmailSender)
+    missingFieldLabels.push(t("activity_update_email_sender"));
+  if (!settings.FinancialYearStartDate)
+    missingFieldLabels.push(t("financial_year_start_date"));
+  if (!settings.CommitteeCreationDate)
+    missingFieldLabels.push(t("committee_creation_date"));
+  if (!settings.YearlyMailSendDate)
+    missingFieldLabels.push(t("yearly_mail_send_date"));
+
+  const requiredFieldMissing = missingFieldLabels.length > 0;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
@@ -1013,7 +1025,108 @@ export default function SettingsPage() {
             </div>
           </FormSection>
 
+          <FormSection title={t("directory_settings")} columns={2}>
+            <div className="flex flex-col gap-3">
+              <Checkbox
+                label={t("directory_enabled")}
+                checked={settings.DirectoryEnabled === "true"}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSettingsChange(
+                    "DirectoryEnabled",
+                    e.target.checked ? "true" : "false",
+                    setSettings,
+                  )
+                }
+              />
+              <Checkbox
+                label={t("directory_dry_run")}
+                checked={settings.DirectoryDryRun === "true"}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSettingsChange(
+                    "DirectoryDryRun",
+                    e.target.checked ? "true" : "false",
+                    setSettings,
+                  )
+                }
+              />
+            </div>
+            <Select
+              label={t("directory_provider")}
+              value={settings.DirectoryProvider || "GoogleWorkspace"}
+              onChange={(e) =>
+                handleSettingsChange("DirectoryProvider", e.target.value, setSettings)
+              }
+              options={[
+                { value: "GoogleWorkspace", label: "Google Workspace" },
+              ]}
+            />
+            <Input
+              label={t("directory_domain")}
+              placeholder="stickyutrecht.nl"
+              value={settings.DirectoryGoogleWorkspaceDomain || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "DirectoryGoogleWorkspaceDomain",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("directory_admin_email")}
+              placeholder="admin-sync@stickyutrecht.nl"
+              value={settings.DirectoryGoogleWorkspaceImpersonatedAdminEmail || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "DirectoryGoogleWorkspaceImpersonatedAdminEmail",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+            />
+            <div className="col-span-1 md:col-span-2">
+              <TextArea
+                label={t("directory_key_json")}
+                placeholder='{"type": "service_account", ...}'
+                value={settings.DirectoryGoogleWorkspaceKeyJson || ""}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  handleSettingsChange(
+                    "DirectoryGoogleWorkspaceKeyJson",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <Input
+                label={t("directory_key_path")}
+                placeholder="/secrets/google-sa.json"
+                value={settings.DirectoryGoogleWorkspaceKeyPath || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "DirectoryGoogleWorkspaceKeyPath",
+                    e.target.value.trim(),
+                    setSettings,
+                  )
+                }
+              />
+            </div>
+          </FormSection>
+
           <div className="pt-6 border-t border-slate-200">
+            {requiredFieldMissing && (
+              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                <p className="font-semibold mb-1">
+                  {t("cannot_save_settings_missing_fields")}:
+                </p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {missingFieldLabels.map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <Button
               onClick={() =>
                 handleSaveSettings({

@@ -40,7 +40,8 @@ public class Member
         "/housenumber",
         "/postalcode",
         "/city",
-        "/preferredlanguage"
+        "/preferredlanguage",
+        "/directoryemailoverride"
     };
 
     /// <summary>
@@ -115,6 +116,19 @@ public class Member
     [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
+
+    /// <summary>
+    /// Optional override email address for external directory synchronization (e.g. Google Workspace).
+    /// Used when the member's primary Koala email differs from their directory email.
+    /// </summary>
+    [StringLength(100)]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
+    public string? DirectoryEmailOverride { get; set; }
+
+    /// <summary>
+    /// Returns the effective directory email address: DirectoryEmailOverride if set, otherwise Email.
+    /// </summary>
+    public string GetDirectoryEmail() => !string.IsNullOrWhiteSpace(DirectoryEmailOverride) ? DirectoryEmailOverride : Email;
 
     /// <summary>
     /// The phone number of the member. 

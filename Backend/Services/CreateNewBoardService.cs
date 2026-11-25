@@ -20,6 +20,7 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
         using var scope = serviceScopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
+        var directoryOutboxWorker = scope.ServiceProvider.GetService<DirectoryOutboxWorker>();
         var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
 
         if (userId.HasValue)
@@ -78,6 +79,12 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
             foreach (var oldMember in oldBoardMembers)
             {
                 EnqueueAuthSync(oldMember.Member, authOutboxWorker, db);
+            }
+
+            var boardGroup = await db.Groups.FindAsync([boardGroupId]);
+            if (boardGroup != null && !string.IsNullOrWhiteSpace(boardGroup.DirectoryGroupEmail) && directoryOutboxWorker != null)
+            {
+                directoryOutboxWorker.EnqueueReconcileGroupTask(boardGroup.DirectoryGroupEmail, db);
             }
 
             // Reset Gratie and Begunstiger status for all active members upon board rotation.

@@ -109,6 +109,11 @@ export const handleSaveAccount = async (
             path: "/preferredLanguage",
             value: formData.preferredLanguage,
           },
+          {
+            op: "replace",
+            path: "/directoryEmailOverride",
+            value: formData.directoryEmailOverride?.trim() || null,
+          },
         ],
       });
       if (response.error) {

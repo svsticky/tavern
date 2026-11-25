@@ -71,6 +71,7 @@ describe("resetCreateGroupForm", () => {
     expect(setFormData).toHaveBeenCalledWith({
       name: "",
       type: "Committee",
+      directoryGroupEmail: "",
       groupPicture: null,
     });
     expect(setImagePreview).toHaveBeenCalledWith(null);

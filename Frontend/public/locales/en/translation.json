@@ -212,6 +212,19 @@
   "group_info": "Group info",
   "group_memberships": "Group memberships",
   "group_name": "Group name",
+  "directory_group_email": "Directory group email",
+  "sync_directory_group": "Sync with Directory",
+  "directory_sync_enqueued": "Directory synchronization enqueued",
+  "directory_sync_failed": "Failed to synchronize directory",
+  "directory_settings": "Directory synchronization",
+  "directory_enabled": "Enable directory synchronization",
+  "directory_dry_run": "Dry run",
+  "directory_provider": "Directory provider",
+  "directory_domain": "Domain name",
+  "directory_admin_email": "Impersonated admin email",
+  "directory_key_json": "Google Service Account Key (JSON)",
+  "directory_key_path": "Google Service Account Key Path (optional)",
+  "directory_email_override": "Directory email override",
   "group_type": "Group type",
   "groups": "Groups",
   "home": "Home",
@@ -687,5 +700,6 @@
   "statistics_activity_distribution_subtitle": "How many members went to 1, 2, 3 or more activities in {{year}}. Members who didn't go to any activity aren't included.",
   "statistics_activities_count_one": "{{count}} activity",
   "statistics_activities_count_other": "{{count}} activities",
-  "statistics_activities_range": "{{from}} to {{to}} activities"
+  "statistics_activities_range": "{{from}} to {{to}} activities",
+  "cannot_save_settings_missing_fields": "Cannot save settings because the following required fields are missing"
 }

@@ -43,6 +43,7 @@ type EditMemberFormData = {
   begunstiger: boolean;
   suspended: boolean;
   dateOfBirth: string;
+  directoryEmailOverride: string;
 };
 
 /**
@@ -121,6 +122,7 @@ export const loadMemberData = async ({
       ereLid: !!memberResponse.data.ereLid,
       begunstiger: !!memberResponse.data.begunstiger,
       suspended: !!memberResponse.data.suspended,
+      directoryEmailOverride: memberResponse.data.directoryEmailOverride || "",
       dateOfBirth: memberResponse.data.dateOfBirth
         ? new Date(memberResponse.data.dateOfBirth).toISOString().split("T")[0]
         : "",
@@ -221,11 +223,20 @@ export const handleSaveMember = async (
     try {
       setSaving(true);
 
-      const patchDoc = Object.keys(formData).map((key) => ({
-        op: "replace",
-        path: `/${key}`,
-        value: formData[key as keyof typeof formData],
-      }));
+      const patchDoc = Object.keys(formData).map((key) => {
+        const rawValue = formData[key as keyof typeof formData];
+        const value =
+          key === "directoryEmailOverride"
+            ? typeof rawValue === "string" && rawValue.trim()
+              ? rawValue.trim()
+              : null
+            : rawValue;
+        return {
+          op: "replace",
+          path: `/${key}`,
+          value,
+        };
+      });
 
       const response = await patchMembersById({
         path: { id: memberId },

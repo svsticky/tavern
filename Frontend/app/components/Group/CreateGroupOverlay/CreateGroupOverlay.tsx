@@ -4,8 +4,10 @@ import type { GroupType } from "~/api";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Select from "~/components/UI/Select";
+import { useApp } from "~/context/AppContext";
 import Form from "../../UI/Form/Form";
 import {
+  type CreateGroupFormData,
   handleCreateGroupSubmit,
   handleFileChange,
   resetCreateGroupForm,
@@ -25,13 +27,15 @@ export default function CreateGroupOverlay({
 }: {
   onSuccess: () => void;
 }) {
+  const { directoryEnabled } = useApp();
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateGroupFormData>({
     name: "",
     type: "Committee",
+    directoryGroupEmail: "",
     groupPicture: null as File | null,
   });
 
@@ -97,6 +101,17 @@ export default function CreateGroupOverlay({
           { value: "Dispute", label: t("dispute") },
         ]}
       />
+
+      {directoryEnabled && (
+        <Input
+          label={t("directory_group_email")}
+          value={formData.directoryGroupEmail}
+          placeholder="commissie@stickyutrecht.nl"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setFormData({ ...formData, directoryGroupEmail: e.target.value })
+          }
+        />
+      )}
 
       <Button
         variant="primary"

@@ -29,7 +29,8 @@ public class SettingsService : ISettingsService
         "boardprimarydark",
         "studystartdates",
         "committeecreationdate",
-        "mainboardmail"
+        "mainboardmail",
+        "directoryenabled"
     };
 
     /// <summary>
@@ -99,9 +100,22 @@ public class SettingsService : ISettingsService
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         _logger.LogInformation("Updating setting {SettingName} by user {UserId}.", name, userId);
-        var setting = await GetSettingOrThrow(name, ct);
+        var setting = await _db.Settings.FindAsync(new object[] { name }, ct);
 
-        setting.Value = value;
+        if (setting == null)
+        {
+            setting = new Setting
+            {
+                Name = name,
+                Value = value
+            };
+            _db.Settings.Add(setting);
+        }
+        else
+        {
+            setting.Value = value;
+        }
+
         await _db.SaveChangesAsync(ct);
 
         if (name.Equals("FinancialYearStartDate", StringComparison.OrdinalIgnoreCase))
@@ -139,13 +153,23 @@ public class SettingsService : ISettingsService
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         _logger.LogInformation("Patching setting {SettingName} by user {UserId}.", name, userId);
-        var setting = await GetSettingOrThrow(name, ct);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
         if (patchDoc.Operations.Any(op => op.path.Equals("/name", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Name field.");
+
+        var setting = await _db.Settings.FindAsync(new object[] { name }, ct);
+        if (setting == null)
+        {
+            setting = new Setting
+            {
+                Name = name,
+                Value = string.Empty
+            };
+            _db.Settings.Add(setting);
+        }
 
         patchDoc.ApplyTo(setting);
 

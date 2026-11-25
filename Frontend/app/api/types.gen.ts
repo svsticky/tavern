@@ -775,6 +775,10 @@ export type GroupResponseDto = {
      * The path where the picture for the group is stored, if any.
      */
     groupPicturePath?: string | null;
+    /**
+     * The external directory group email address linked to this group.
+     */
+    directoryGroupEmail?: string | null;
 };
 
 /**
@@ -795,6 +799,10 @@ export type GroupUpdateDto = {
      */
     active: boolean;
     type: GroupType;
+    /**
+     * The external directory group email address linked to this group.
+     */
+    directoryGroupEmail?: string | null;
 };
 
 /**
@@ -896,6 +904,10 @@ export type Member = {
      * The email address of the member.
      */
     email: string;
+    /**
+     * Optional override for the member's email in the external directory.
+     */
+    directoryEmailOverride?: string | null;
     /**
      * The phone number of the member.
      */
@@ -1026,6 +1038,10 @@ export type MemberResponseDto = {
      */
     email?: string | null;
     /**
+     * Optional override for the member's email in the external directory.
+     */
+    directoryEmailOverride?: string | null;
+    /**
      * The phone number of the member.
      */
     phoneNumber?: string | null;
@@ -1116,6 +1132,10 @@ export type MemberUpdateDto = {
      * The email address of the member.
      */
     email: string;
+    /**
+     * Optional override for the member's email in the external directory.
+     */
+    directoryEmailOverride?: string | null;
     /**
      * The phone number of the member.
      */
@@ -1456,6 +1476,10 @@ export type PostMemberDto = {
      * The email address of the member.
      */
     email: string;
+    /**
+     * Optional override for the member's email in the external directory.
+     */
+    directoryEmailOverride?: string | null;
     /**
      * The phone number of the member.
      */
@@ -4106,6 +4130,7 @@ export type PostGroupsData = {
          */
         Name: string;
         Type: GroupType;
+        DirectoryGroupEmail?: string | null;
         /**
          * The group picture file to be uploaded and associated with the newly created group. This field is optional and can be included in the request to provide a visual representation of the group, allowing for better identification and differentiation of groups within the system. If provided, the group picture will be processed and stored appropriately based on the application's file handling and storage mechanisms.
          */
@@ -4428,6 +4453,47 @@ export type PostGroupsPromoteBoardResponses = {
      */
     200: unknown;
 };
+
+export type PostGroupsByIdSyncDirectoryData = {
+    path: {
+        /**
+         * The unique identifier of the group to synchronize.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/groups/{id}/sync-directory';
+};
+
+export type PostGroupsByIdSyncDirectoryResponses = {
+    /**
+     * Accepted
+     */
+    202: unknown;
+};
+
+export type PostGroupsByIdSyncDirectoryResponse = PostGroupsByIdSyncDirectoryResponses[keyof PostGroupsByIdSyncDirectoryResponses];
+
+export type PostGroupsByIdSyncDirectoryErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: unknown;
+    /**
+     * Not Found
+     */
+    404: unknown;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type PostGroupsByIdSyncDirectoryError = PostGroupsByIdSyncDirectoryErrors[keyof PostGroupsByIdSyncDirectoryErrors];
 
 export type GetMailinglistsData = {
     body?: never;

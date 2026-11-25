@@ -13,6 +13,7 @@ import {
   patchGroupsById,
   postGroupmemberships,
   postGroupsByIdGroupPicture,
+  postGroupsByIdSyncDirectory,
   type RoleAlias,
 } from "~/api";
 import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
@@ -26,6 +27,7 @@ export type EditGroupFormData = {
   DefaultGLAccount: string;
   DefaultCostCenter: string;
   DefaultCostUnit: string;
+  DirectoryGroupEmail?: string;
   Active: boolean;
 };
 
@@ -75,6 +77,7 @@ export const loadGroupData = async ({
       DefaultGLAccount: groupResponse.data.glAccountId ?? "",
       DefaultCostCenter: groupResponse.data.costCenterId ?? "",
       DefaultCostUnit: groupResponse.data.costUnitId ?? "",
+      DirectoryGroupEmail: groupResponse.data.directoryGroupEmail ?? "",
     });
 
     const roleAliasesResponse = await getRolealiases();
@@ -201,6 +204,38 @@ export const handleSaveGroup = async (
       error: (error) => appendErrorMessage(t("save_error"), error),
     })
     .finally(() => setSaving(false));
+};
+
+/**
+ * Triggers on-demand synchronization of the group's memberships with the external directory.
+ *
+ * @async
+ * @param {number | null} id - The ID of the group to synchronize.
+ * @param {Function} setSyncing - State setter for synchronization progress.
+ */
+export const handleSyncDirectoryGroup = async (
+  id: number | null,
+  setSyncing: (syncing: boolean) => void,
+) => {
+  if (!id) return;
+
+  try {
+    setSyncing(true);
+    const response = await postGroupsByIdSyncDirectory({
+      path: { id },
+    });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to sync directory group");
+    }
+
+    toast.success(t("directory_sync_enqueued"));
+  } catch (err) {
+    console.error("Directory sync error:", err);
+    toast.error(appendErrorMessage(t("directory_sync_failed"), err));
+  } finally {
+    setSyncing(false);
+  }
 };
 
 /**

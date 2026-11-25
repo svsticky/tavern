@@ -11,6 +11,7 @@ import {
   setGlobalCommitteeCreationDate,
   setGlobalFinancialYearStartDate,
 } from "~/util/date.util";
+import { BOARD_THEME_SETTINGS_UPDATED_EVENT } from "~/util/theme-settings";
 
 /**
  * The core layout wrapper for all authenticated routes in the application.
@@ -82,6 +83,7 @@ export default function AuthenticatedLayout() {
     setFinancialYearStartDate,
     committeeCreationDate,
     setCommitteeCreationDate,
+    setDirectoryEnabled,
     member,
     setMember,
   } = useApp();
@@ -246,6 +248,32 @@ export default function AuthenticatedLayout() {
           ),
         );
     }
+
+    const fetchDirectoryEnabled = () => {
+      getSettingsById({
+        path: {
+          id: "DirectoryEnabled",
+        },
+      })
+        .then((res) => {
+          setDirectoryEnabled(res.data?.value?.toLowerCase() === "true");
+        })
+        .catch(() => {
+          setDirectoryEnabled(false);
+        });
+    };
+
+    fetchDirectoryEnabled();
+    window.addEventListener(
+      BOARD_THEME_SETTINGS_UPDATED_EVENT,
+      fetchDirectoryEnabled,
+    );
+    return () => {
+      window.removeEventListener(
+        BOARD_THEME_SETTINGS_UPDATED_EVENT,
+        fetchDirectoryEnabled,
+      );
+    };
   }, [
     tokenParsed,
     boardGroupId,

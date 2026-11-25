@@ -280,4 +280,39 @@ public class SettingsServiceTests : IDisposable
             Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = "08-01";
         }
     }
+
+    [Fact]
+    public async Task UpdateSetting_WhenSettingDoesNotExist_CreatesSetting()
+    {
+        // Arrange
+        var name = "NewSettingViaPut";
+        var value = "InitialVal";
+
+        // Act
+        await _service.UpdateSetting(name, value, _userId, CancellationToken.None);
+
+        // Assert
+        var created = await _db.Settings.FindAsync(name);
+        Assert.NotNull(created);
+        Assert.Equal(value, created.Value);
+    }
+
+    [Fact]
+    public async Task PatchSetting_WhenSettingDoesNotExist_CreatesSettingAndAppliesPatch()
+    {
+        // Arrange
+        var name = "NewSettingViaPatch";
+        var patchDoc = new JsonPatchDocument<Setting>(new List<Operation<Setting>>
+        {
+            new Operation<Setting>("replace", "/value", null, "PatchedVal")
+        }, new DefaultContractResolver());
+
+        // Act
+        await _service.PatchSetting(name, patchDoc, _userId, CancellationToken.None);
+
+        // Assert
+        var created = await _db.Settings.FindAsync(name);
+        Assert.NotNull(created);
+        Assert.Equal("PatchedVal", created.Value);
+    }
 }

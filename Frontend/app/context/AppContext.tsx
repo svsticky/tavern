@@ -25,6 +25,8 @@ interface AppContextType {
   setFinancialYearStartDate: (date: string) => void;
   committeeCreationDate: string | null;
   setCommitteeCreationDate: (date: string) => void;
+  directoryEnabled: boolean;
+  setDirectoryEnabled: (enabled: boolean) => void;
   member: MemberResponseDto | null;
   setMember: React.Dispatch<React.SetStateAction<MemberResponseDto | null>>;
 }
@@ -33,7 +35,7 @@ interface AppContextType {
  * Internal context object for the application state.
  * Initialized as undefined to enforce the use of the Provider.
  */
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 /**
  * Global State Provider that wraps the application.
@@ -57,6 +59,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [committeeCreationDate, setCommitteeCreationDate] = useState<
     string | null
   >(null);
+  const [directoryEnabled, setDirectoryEnabled] = useState(false);
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   return (
@@ -70,6 +73,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setFinancialYearStartDate,
         committeeCreationDate,
         setCommitteeCreationDate,
+        directoryEnabled,
+        setDirectoryEnabled,
         member,
         setMember,
       }}

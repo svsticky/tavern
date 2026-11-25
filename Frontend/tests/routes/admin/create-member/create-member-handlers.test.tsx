@@ -43,6 +43,7 @@ function baseFormData(
     studentNumber: "s1234567",
     language: "NL",
     isBegunstiger: false,
+    directoryEmailOverride: "",
     ...overrides,
   };
 }

@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Utils.DateTime;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
@@ -24,7 +25,7 @@ public class CalendarService : ICalendarService
     /// recoverable by converting back to the association's own timezone. Reading the date straight off the UTC
     /// value would place a whole-day activity on the wrong calendar day for half the year.
     /// </remarks>
-    private static readonly TimeZoneInfo _associationTimeZone = ResolveAssociationTimeZone();
+    private static readonly TimeZoneInfo _associationTimeZone = AssociationTimeZoneUtils.Get();
 
     /// <summary>
     /// The local end-of-day time that, combined with a local start of midnight, marks an activity as whole-day.
@@ -230,19 +231,6 @@ public class CalendarService : ICalendarService
     private static string TrimTrailingSlash(string? url)
     {
         return (url ?? string.Empty).TrimEnd('/');
-    }
-
-    /// <summary>
-    /// Resolves the association's timezone from the AssociationTimeZone environment variable, falling back to
-    /// Europe/Amsterdam when it is not configured. A configured but unknown timezone identifier deliberately
-    /// throws rather than silently falling back, because quietly using the wrong timezone would place whole-day
-    /// activities on the wrong calendar day without anyone noticing.
-    /// </summary>
-    /// <returns>The timezone the association operates in.</returns>
-    private static TimeZoneInfo ResolveAssociationTimeZone()
-    {
-        string timeZoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-        return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
     }
 
     /// <summary>Gets the display name of the calendar in the given language.</summary>

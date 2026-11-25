@@ -395,9 +395,35 @@ describe("handlePaymentsExport", () => {
 
     await vi.waitFor(() => expect(clickSpy).toHaveBeenCalled());
     expect(getPaymentsExport).toHaveBeenCalledWith({
-      query: { startDate: "2024-01-01", endDate: "2024-01-31" },
+      query: { startDate: "2024-01-01", endDate: "2024-02-01" },
       responseType: "blob",
     });
+    await vi.waitFor(() =>
+      expect(setExporting).toHaveBeenLastCalledWith(false),
+    );
+    clickSpy.mockRestore();
+  });
+
+  it.each([
+    ["2024-02-28", "2024-02-29"],
+    ["2024-02-29", "2024-03-01"],
+    ["2023-02-28", "2023-03-01"],
+    ["2024-12-31", "2025-01-01"],
+  ])("sends the day after %s as exclusive end date (%s)", async (selectedEnd, expectedEnd) => {
+    getPaymentsExport.mockResolvedValue({ data: new Blob(["a,b"]) });
+    const setExporting = vi.fn();
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    handlePaymentsExport("2024-01-01", selectedEnd, setExporting);
+
+    await vi.waitFor(() => expect(clickSpy).toHaveBeenCalled());
+    expect(getPaymentsExport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: { startDate: "2024-01-01", endDate: expectedEnd },
+      }),
+    );
     await vi.waitFor(() =>
       expect(setExporting).toHaveBeenLastCalledWith(false),
     );

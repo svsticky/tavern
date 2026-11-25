@@ -6,6 +6,7 @@ using Backend.QueryExtensions;
 using Backend.Services.MailSubscriptionServices;
 using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
+using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -101,8 +102,7 @@ namespace Backend.Services.Domain
             }
 
             // Check if member is a minor and if so, require parent phone number
-            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+            TimeZoneInfo tz = AssociationTimeZoneUtils.Get();
             DateTime todayInTimeZone = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).Date;
 
             if (dto.DateOfBirth.AddYears(18).Date > todayInTimeZone &&

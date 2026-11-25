@@ -290,11 +290,20 @@ export const handleOverpaidProcessed = ({
 };
 
 /**
+ * Adds days to a YYYY-MM-DD string without any time zone involvement.
+ */
+const addDays = (date: string, days: number): string => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
  * Generates a CSV export of payments within a specific date range and triggers a browser download.
  *
  * @async
  * @param {string} exportStartDate - Start of the range (YYYY-MM-DD).
- * @param {string} exportEndDate - End of the range (YYYY-MM-DD).
+ * @param {string} exportEndDate - Last day of the range (YYYY-MM-DD), inclusive.
  * @param {Function} setExporting - State setter for loading indicators.
  */
 export const handlePaymentsExport = (
@@ -308,7 +317,8 @@ export const handlePaymentsExport = (
       const response = await getPaymentsExport({
         query: {
           startDate: exportStartDate,
-          endDate: exportEndDate,
+          // The API treats the end as exclusive, the UI end date is inclusive.
+          endDate: addDays(exportEndDate, 1),
         },
         responseType: "blob",
       });

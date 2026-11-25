@@ -12,6 +12,7 @@ using Backend.Services.MailSubscriptionServices;
 using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Services.StorageServices;
+using Backend.Utils.DateTime;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -318,8 +319,7 @@ internal static class ServiceExtensions
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        TimeZoneInfo tz = AssociationTimeZoneUtils.Get();
         var recurringJobOptions = new RecurringJobOptions
         {
             TimeZone = tz

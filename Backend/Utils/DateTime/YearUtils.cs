@@ -29,9 +29,7 @@ public static class YearUtils
     /// <returns>The calculated financial year.</returns>
     public static uint GetCurrentFinancialYear(System.DateTime utcNow)
     {
-        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        TimeZoneInfo tz = AssociationTimeZoneUtils.Get();
         System.DateTime nowInTimeZone = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
         int targetMonth = 8;
@@ -80,9 +78,7 @@ public static class YearUtils
     /// </summary>
     public static uint GetYearForDate(System.DateTime utcNow, string startDateStr)
     {
-        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        TimeZoneInfo tz = AssociationTimeZoneUtils.Get();
         System.DateTime nowInTimeZone = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
         int targetMonth = 8;
@@ -126,8 +122,7 @@ public static class YearUtils
     /// </summary>
     public static DateTimeOffset GetYearStartUtc(uint year, string startDateStr)
     {
-        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        TimeZoneInfo tz = AssociationTimeZoneUtils.Get();
 
         int targetMonth = 8;
         int targetDay = 1;

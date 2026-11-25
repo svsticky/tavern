@@ -5,6 +5,7 @@ using Backend.Models.Domain;
 using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Utils;
+using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -185,35 +186,33 @@ namespace Backend.Services.Domain
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
-
-            var startDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, timezoneId).Date.ToUniversalTime();
-            var endDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, timezoneId).Date.ToUniversalTime();
+            DateTime startUtc = AssociationTimeZoneUtils.ToUtc(startDate);
+            DateTime endUtc = AssociationTimeZoneUtils.ToUtc(endDate);
 
             var enrollmentPayments = await db.EnrollmentPayments
                 .Include(p => p.Activity)
                     .ThenInclude(a => a!.Organizer)
-                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .Where(p => p.PaidAt >= startUtc && p.PaidAt < endUtc && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
             var membershipPayments = await db.MembershipPayments
                 .Include(p => p.Member)
-                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .Where(p => p.PaidAt >= startUtc && p.PaidAt < endUtc && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
             var paymentServiceFeePayments = await db.PaymentServiceFeePayments
-                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .Where(p => p.PaidAt >= startUtc && p.PaidAt < endUtc && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
             var begunstigerPayments = await db.BegunstigerPayments
-                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .Where(p => p.PaidAt >= startUtc && p.PaidAt < endUtc && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
-            logger.LogInformation("Exported payments CSV for period {StartDateInTimeZone} - {EndDateInTimeZone}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
-                startDateInTimeZone, endDateInTimeZone, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
+            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
+            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
+                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
 
-            var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
+            var fileName = $"payments_{startDate:yyyyMMdd}_{endDate.AddTicks(-1):yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
         }
 
@@ -714,7 +713,7 @@ namespace Backend.Services.Domain
         {
             var csv = new StringBuilder();
 
-            var invoiceDate = endDateInNL.AddDays(-1).ToString("yyyy-MM-dd");
+            var invoiceDate = endDateInNL.AddTicks(-1).ToString("yyyy-MM-dd");
             var periodLabel = $"ideal - {startDateInNL:yyyy-MM-dd} / {endDateInNL:yyyy-MM-dd}";
             var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
             var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";

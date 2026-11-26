@@ -91,10 +91,29 @@ const KoalaMark = ({ primary = PRIMARY_CSS_VAR }: { primary?: string }) => (
  *
  * @param {string} primary - A concrete color for the ear insides.
  */
-export const koalaMarkSvgString = (primary: string) =>
-  `<svg version="1.1" width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${KOALA_MARK_PATHS.map(
-    ({ d, fill }) =>
-      `<path d="${d}" fill="${fill === PRIMARY ? primary : fill}"/>`,
+
+/** Builds a standalone SVG document of the Koala logo. */
+export const koalaMarkSvgString = (primary: string, isDarkMode = false) => {
+  const darkColorMap: Record<string, string> = {
+    "#383735": "#f5f5f4",
+    "#292623": "#e7e5e4",
+    "#292624": "#e7e5e4",
+    "#292523": "#e7e5e4",
+    "#2a2724": "#e7e5e4",
+  };
+
+  return `<svg version="1.1" width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">${KOALA_MARK_PATHS.map(
+    ({ d, fill }) => {
+      const resolvedFill =
+        fill === PRIMARY
+          ? primary
+          : isDarkMode
+            ? (darkColorMap[fill.toLowerCase()] ?? fill)
+            : fill;
+
+      return `<path d="${d}" fill="${resolvedFill}"/>`;
+    },
   ).join("")}</svg>`;
+};
 
 export default KoalaMark;

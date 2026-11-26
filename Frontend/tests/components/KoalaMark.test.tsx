@@ -45,7 +45,7 @@ describe("KoalaMark", () => {
 
 describe("koalaMarkSvgString", () => {
   it("builds a standalone svg with a concrete primary color", () => {
-    const svg = koalaMarkSvgString("#abcdef");
+    const svg = koalaMarkSvgString("#abcdef", false);
     expect(svg.startsWith("<svg")).toBe(true);
     expect(svg).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(svg.match(/<path /g)).toHaveLength(KOALA_MARK_PATHS.length);
